@@ -11,9 +11,9 @@ import {
   ALLOWED_UPLOAD_EXTENSIONS,
   ATTACHMENT_TYPE_OPTIONS,
   BOOLEAN_FILTERS,
+  FUTUREWHIZ_ROLE_OPTIONS,
   INTAKE_REQUEST_TYPE_OPTIONS,
   INTAKE_TRIGGER_OPTIONS,
-  ROPA_CONTACT_DEFAULTS,
   REQUIRED_ACTIVITY_FIELDS,
   REVIEW_INTERVAL_OPTIONS,
   ROLE_OPTIONS,
@@ -29,11 +29,14 @@ import {
   buildSimplePdf,
   displayValue,
   escapeHtml,
+  futurewhizRoleLabel,
   formatDate,
   formatDateTime,
   normalizeFieldValue,
   nowIso,
   parseJsonArray,
+  activityControllerContactValue,
+  controllerProfileSummary,
   registerFlagLabels,
   statusClass,
   statusLabel,
@@ -116,6 +119,10 @@ app.use((req, res, next) => {
   res.locals.statusLabel = statusLabel;
   res.locals.parseJsonArray = parseJsonArray;
   res.locals.attachmentTypeOptions = ATTACHMENT_TYPE_OPTIONS;
+  res.locals.futurewhizRoleLabel = futurewhizRoleLabel;
+  res.locals.activityControllerContactValue = activityControllerContactValue;
+  res.locals.controllerProfileSummary = controllerProfileSummary;
+  res.locals.controllerProfileContactDetails = controllerProfileContactDetails;
   next();
 });
 
@@ -198,6 +205,24 @@ async function getVocabBundle() {
   };
 }
 
+async function getControllerProfile() {
+  return db.prepare('SELECT * FROM controller_profile ORDER BY id ASC LIMIT 1').get();
+}
+
+function controllerProfileContactDetails(profile) {
+  if (!profile) return '';
+  return [
+    profile.contact_name,
+    profile.address,
+    profile.phone_number,
+    profile.email,
+    profile.chamber_of_commerce ? `KvK ${profile.chamber_of_commerce}` : ''
+  ]
+    .map((value) => String(value || '').trim())
+    .filter(Boolean)
+    .join(' | ');
+}
+
 async function getUserByEmail(email) {
   return db.prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)').get(email);
 }
@@ -236,6 +261,9 @@ function likeJsonParam(value) {
 
 function buildActivityFilters(query) {
   return {
+    futurewhiz_role: ['controller', 'processor'].includes(String(query.futurewhiz_role || ''))
+      ? String(query.futurewhiz_role)
+      : '',
     q: String(query.q || '').trim(),
     vendor: String(query.vendor || ''),
     product: String(query.product || ''),
@@ -266,6 +294,11 @@ function buildActivityWhere(filters) {
     );
     const searchTerm = `%${filters.q}%`;
     params.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+  }
+
+  if (filters.futurewhiz_role) {
+    clauses.push('futurewhiz_role = ?');
+    params.push(filters.futurewhiz_role);
   }
 
   if (filters.vendor) {
@@ -369,6 +402,7 @@ function summarizeActivityFilters(filters) {
     status_asc: 'Status'
   };
 
+  if (filters.futurewhiz_role) summaries.push(`Futurewhiz role: ${futurewhizRoleLabel(filters.futurewhiz_role)}`);
   if (filters.q) summaries.push(`Keyword: ${filters.q}`);
   if (filters.vendor) summaries.push(`Vendor: ${filters.vendor}`);
   if (filters.product) summaries.push(`Product: ${filters.product}`);
@@ -563,8 +597,10 @@ function validateActivityPayload(payload, mode = 'form') {
     errors.push('Business owner is required.');
   }
 
-  if (!String(payload.controller_name || '').trim() || !String(payload.controller_contact_details || '').trim()) {
-    errors.push('Controller name and contact details are required.');
+  if (payload.futurewhiz_role === 'processor') {
+    if (!String(payload.controller_name || '').trim() || !String(payload.controller_contact_details || '').trim()) {
+      errors.push('When Futurewhiz acts as processor, the customer / controller name and contact details are required.');
+    }
   }
 
   if (payload.legal_reviewer_email && !payload.legal_reviewer_email.endsWith(`@${ALLOWED_DOMAIN}`)) {
@@ -579,6 +615,7 @@ function validateActivityPayload(payload, mode = 'form') {
 }
 
 async function buildActivityPayload(body, actor, existingActivity = null, mode = 'form') {
+  const controllerProfile = await getControllerProfile();
   const owner = await lookupUserSummary(body.business_owner_email || existingActivity?.business_owner_email || actor.email);
   const reviewer = await lookupUserSummary(body.legal_reviewer_email || existingActivity?.legal_reviewer_email || '');
   const reviewIntervalMonths = Number(body.review_interval_months || existingActivity?.review_interval_months || 12);
@@ -587,6 +624,16 @@ async function buildActivityPayload(body, actor, existingActivity = null, mode =
     String(body.next_review_date || '').trim() ||
     addMonths(lastReviewDate || todayIsoDate(), reviewIntervalMonths);
   const requestedStatus = String(body.status || existingActivity?.status || 'draft').trim() || 'draft';
+  const futurewhizRole =
+    String(body.futurewhiz_role || existingActivity?.futurewhiz_role || 'controller').trim() || 'controller';
+  const controllerName =
+    futurewhizRole === 'processor'
+      ? String(body.controller_name || existingActivity?.controller_name || '').trim()
+      : String(controllerProfile?.company_name || existingActivity?.controller_name || '').trim();
+  const controllerContactDetails =
+    futurewhizRole === 'processor'
+      ? String(body.controller_contact_details || existingActivity?.controller_contact_details || '').trim()
+      : controllerProfileContactDetails(controllerProfile);
 
   return {
     reference_code: existingActivity?.reference_code || (await createActivityReference()),
@@ -595,10 +642,9 @@ async function buildActivityPayload(body, actor, existingActivity = null, mode =
     business_owner_id: owner.id,
     business_owner_name: owner.name,
     business_owner_email: owner.email,
-    controller_name: String(body.controller_name || existingActivity?.controller_name || ROPA_CONTACT_DEFAULTS.controller_name).trim(),
-    controller_contact_details: String(
-      body.controller_contact_details || existingActivity?.controller_contact_details || ROPA_CONTACT_DEFAULTS.controller_contact_details
-    ).trim(),
+    futurewhiz_role: futurewhizRole,
+    controller_name: controllerName,
+    controller_contact_details: controllerContactDetails,
     joint_controller_name: String(body.joint_controller_name || existingActivity?.joint_controller_name || '').trim(),
     joint_controller_contact_details: String(
       body.joint_controller_contact_details || existingActivity?.joint_controller_contact_details || ''
@@ -609,10 +655,8 @@ async function buildActivityPayload(body, actor, existingActivity = null, mode =
     controller_representative_contact_details: String(
       body.controller_representative_contact_details || existingActivity?.controller_representative_contact_details || ''
     ).trim(),
-    dpo_name: String(body.dpo_name || existingActivity?.dpo_name || ROPA_CONTACT_DEFAULTS.dpo_name).trim(),
-    dpo_contact_details: String(
-      body.dpo_contact_details || existingActivity?.dpo_contact_details || ROPA_CONTACT_DEFAULTS.dpo_contact_details
-    ).trim(),
+    dpo_name: String(body.dpo_name || existingActivity?.dpo_name || '').trim(),
+    dpo_contact_details: String(body.dpo_contact_details || existingActivity?.dpo_contact_details || '').trim(),
     legal_reviewer_id: reviewer.id,
     legal_reviewer_name: reviewer.name,
     legal_reviewer_email: reviewer.email,
@@ -669,7 +713,7 @@ async function insertActivity(payload) {
       `
         INSERT INTO activities (
           reference_code, activity_name, short_description, business_owner_id, business_owner_name, business_owner_email,
-          controller_name, controller_contact_details, joint_controller_name, joint_controller_contact_details,
+          futurewhiz_role, controller_name, controller_contact_details, joint_controller_name, joint_controller_contact_details,
           controller_representative_name, controller_representative_contact_details, dpo_name, dpo_contact_details,
           legal_reviewer_id, legal_reviewer_name, legal_reviewer_email, department, product_service, purpose_of_processing,
           data_subject_categories_json, personal_data_categories_json, lawful_basis, recipient_categories_json,
@@ -680,7 +724,7 @@ async function insertActivity(payload) {
           ai_tool_review_url, status, workflow_notes, review_interval_months, last_updated_by_id, last_updated_by_name,
           last_updated_by_email, last_updated_at, last_review_date, next_review_date, comments_notes,
           created_by_id, created_by_name, created_by_email, created_at, archived_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `
     )
     .run(
@@ -690,6 +734,7 @@ async function insertActivity(payload) {
       payload.business_owner_id,
       payload.business_owner_name,
       payload.business_owner_email,
+      payload.futurewhiz_role,
       payload.controller_name,
       payload.controller_contact_details,
       payload.joint_controller_name,
@@ -756,7 +801,7 @@ async function updateActivity(id, payload) {
       `
         UPDATE activities SET
           activity_name = ?, short_description = ?, business_owner_id = ?, business_owner_name = ?, business_owner_email = ?,
-          controller_name = ?, controller_contact_details = ?, joint_controller_name = ?, joint_controller_contact_details = ?,
+          futurewhiz_role = ?, controller_name = ?, controller_contact_details = ?, joint_controller_name = ?, joint_controller_contact_details = ?,
           controller_representative_name = ?, controller_representative_contact_details = ?, dpo_name = ?, dpo_contact_details = ?,
           legal_reviewer_id = ?, legal_reviewer_name = ?, legal_reviewer_email = ?, department = ?, product_service = ?,
           purpose_of_processing = ?, data_subject_categories_json = ?, personal_data_categories_json = ?, lawful_basis = ?,
@@ -777,6 +822,7 @@ async function updateActivity(id, payload) {
       payload.business_owner_id,
       payload.business_owner_name,
       payload.business_owner_email,
+      payload.futurewhiz_role,
       payload.controller_name,
       payload.controller_contact_details,
       payload.joint_controller_name,
@@ -835,12 +881,13 @@ async function updateActivity(id, payload) {
 async function renderActivityForm(req, res, options = {}) {
   const vocab = await getVocabBundle();
   const users = await getActiveUsers();
+  const controllerProfile = await getControllerProfile();
   const legalReviewers = users.filter((user) => user.role === 'legal' || user.role === 'admin');
   const businessOwners = users.filter((user) => user.role === 'business' || user.role === 'admin');
   const activity = options.activity || null;
   const formValues = activity
-    ? {
-        ...activity,
+      ? {
+          ...activity,
         data_subject_categories: activity.data_subject_categories,
         personal_data_categories: activity.personal_data_categories,
         recipient_categories: activity.recipient_categories,
@@ -848,18 +895,19 @@ async function renderActivityForm(req, res, options = {}) {
         transfer_mechanisms: activity.transfer_mechanisms,
         transfer_countries: activity.transfer_countries.join('\n')
       }
-    : {
+      : {
         activity_name: '',
         short_description: '',
         business_owner_email: req.session.user.email,
-        controller_name: ROPA_CONTACT_DEFAULTS.controller_name,
-        controller_contact_details: ROPA_CONTACT_DEFAULTS.controller_contact_details,
+        futurewhiz_role: 'controller',
+        controller_name: '',
+        controller_contact_details: '',
         joint_controller_name: '',
         joint_controller_contact_details: '',
         controller_representative_name: '',
         controller_representative_contact_details: '',
-        dpo_name: ROPA_CONTACT_DEFAULTS.dpo_name,
-        dpo_contact_details: ROPA_CONTACT_DEFAULTS.dpo_contact_details,
+        dpo_name: '',
+        dpo_contact_details: '',
         legal_reviewer_email: '',
         department: '',
         product_service: '',
@@ -905,6 +953,8 @@ async function renderActivityForm(req, res, options = {}) {
     errors: options.errors || [],
     statusOptions: STATUS_OPTIONS,
     reviewIntervals: REVIEW_INTERVAL_OPTIONS,
+    futurewhizRoleOptions: FUTUREWHIZ_ROLE_OPTIONS,
+    controllerProfile,
     legalReviewers,
     businessOwners,
     vocab,
@@ -1050,20 +1100,99 @@ app.get(
 );
 
 app.get(
+  '/controller-identification',
+  ensureAuth,
+  asyncHandler(async (req, res) => {
+    const controllerProfile = await getControllerProfile();
+    res.render('controller_identification', {
+      pageTitle: 'Identification of the controller',
+      controllerProfile,
+      errors: [],
+      canEditControllerProfile: req.session.user.role === 'legal' || req.session.user.role === 'admin'
+    });
+  })
+);
+
+app.post(
+  '/controller-identification',
+  ensureLegal,
+  asyncHandler(async (req, res) => {
+    const existingProfile = await getControllerProfile();
+    const controllerProfile = {
+      id: existingProfile?.id,
+      company_name: String(req.body.company_name || '').trim(),
+      contact_name: String(req.body.contact_name || '').trim(),
+      address: String(req.body.address || '').trim(),
+      phone_number: String(req.body.phone_number || '').trim(),
+      email: String(req.body.email || '').trim(),
+      chamber_of_commerce: String(req.body.chamber_of_commerce || '').trim()
+    };
+
+    const errors = [];
+    if (!controllerProfile.company_name) errors.push('Company name is required.');
+    if (!controllerProfile.contact_name) errors.push('Contact is required.');
+    if (!controllerProfile.email) errors.push('Email is required.');
+
+    if (errors.length > 0) {
+      return res.status(422).render('controller_identification', {
+        pageTitle: 'Identification of the controller',
+        controllerProfile,
+        errors,
+        canEditControllerProfile: true
+      });
+    }
+
+    await db
+      .prepare(
+        `
+          UPDATE controller_profile
+          SET company_name = ?, contact_name = ?, address = ?, phone_number = ?, email = ?, chamber_of_commerce = ?, updated_at = ?
+          WHERE id = ?
+        `
+      )
+      .run(
+        controllerProfile.company_name,
+        controllerProfile.contact_name,
+        controllerProfile.address,
+        controllerProfile.phone_number,
+        controllerProfile.email,
+        controllerProfile.chamber_of_commerce,
+        nowIso(),
+        controllerProfile.id
+      );
+
+    await db
+      .prepare(
+        `
+          UPDATE activities
+          SET controller_name = ?, controller_contact_details = ?
+          WHERE futurewhiz_role = 'controller'
+        `
+      )
+      .run(controllerProfile.company_name, controllerProfileContactDetails(controllerProfile));
+
+    setFlash(req, 'success', 'Controller identification updated.');
+    return res.redirect('/controller-identification');
+  })
+);
+
+app.get(
   '/activities',
   ensureAuth,
   asyncHandler(async (req, res) => {
     const filters = buildActivityFilters(req.query);
     const { whereSql, params, orderBy } = buildActivityWhere(filters);
-    const [rows, supportData, vocab] = await Promise.all([
+    const [rows, supportData, vocab, controllerProfile] = await Promise.all([
       db.prepare(`SELECT * FROM activities WHERE ${whereSql} ORDER BY ${orderBy}`).all(params),
       fetchFiltersSupportData(),
-      getVocabBundle()
+      getVocabBundle(),
+      getControllerProfile()
     ]);
 
     res.render('activities', {
       pageTitle: 'RoPA register',
       activities: rows.map(decorateActivity),
+      controllerProfile,
       activeFilters: summarizeActivityFilters(filters),
       filters,
       exportQuery: new URLSearchParams(filters).toString(),
@@ -1131,10 +1260,12 @@ app.get(
         .prepare('SELECT * FROM intake_requests WHERE linked_activity_id = ? OR outcome_activity_id = ? ORDER BY created_at DESC')
         .all(activity.id, activity.id)
     ]);
+    const controllerProfile = await getControllerProfile();
 
     res.render('activity_detail', {
       pageTitle: `${activity.reference_code} · ${activity.activity_name}`,
       activity,
+      controllerProfile,
       changes,
       attachments,
       relatedIntakes,
@@ -1358,10 +1489,11 @@ app.get(
       db.prepare('SELECT * FROM activity_attachments WHERE activity_id = ? ORDER BY uploaded_at DESC').all(activity.id),
       db.prepare('SELECT * FROM activity_change_log WHERE activity_id = ? ORDER BY created_at DESC LIMIT 10').all(activity.id)
     ]);
+    const controllerProfile = await getControllerProfile();
 
     const pdf = buildSimplePdf(
       `${activity.reference_code} - ${activity.activity_name}`,
-      activityPdfLines(activity, attachments, changes)
+      activityPdfLines(activity, attachments, changes, controllerProfile)
     );
 
     res.setHeader('Content-Type', 'application/pdf');
@@ -1376,16 +1508,19 @@ app.get(
   asyncHandler(async (req, res) => {
     const filters = buildActivityFilters(req.query);
     const { whereSql, params, orderBy } = buildActivityWhere(filters);
-    const activities = (await db.prepare(`SELECT * FROM activities WHERE ${whereSql} ORDER BY ${orderBy}`).all(params)).map(
-      decorateActivity
-    );
+    const [activityRows, controllerProfile] = await Promise.all([
+      db.prepare(`SELECT * FROM activities WHERE ${whereSql} ORDER BY ${orderBy}`).all(params),
+      getControllerProfile()
+    ]);
+    const activities = activityRows.map(decorateActivity);
     const activeFilters = summarizeActivityFilters(filters);
     const pdf = buildRegisterPdf(activities, {
       title: 'Futurewhiz RoPA register',
       subtitleLines: [
         `Records exported: ${activities.length}`,
         activeFilters.length ? `Active filters: ${activeFilters.join(' | ')}` : 'Active filters: none'
-      ]
+      ],
+      controllerProfile
     });
 
     res.setHeader('Content-Type', 'application/pdf');
@@ -1400,10 +1535,13 @@ app.get(
   asyncHandler(async (req, res) => {
     const filters = buildActivityFilters(req.query);
     const { whereSql, params, orderBy } = buildActivityWhere(filters);
-    const activities = await db.prepare(`SELECT * FROM activities WHERE ${whereSql} ORDER BY ${orderBy}`).all(params);
+    const [activities, controllerProfile] = await Promise.all([
+      db.prepare(`SELECT * FROM activities WHERE ${whereSql} ORDER BY ${orderBy}`).all(params),
+      getControllerProfile()
+    ]);
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="futurewhiz-ropa-register.csv"');
-    return res.send(buildActivityCsv(activities));
+    return res.send(buildActivityCsv(activities, controllerProfile));
   })
 );
 
@@ -1413,10 +1551,13 @@ app.get(
   asyncHandler(async (req, res) => {
     const filters = buildActivityFilters(req.query);
     const { whereSql, params, orderBy } = buildActivityWhere(filters);
-    const activities = await db.prepare(`SELECT * FROM activities WHERE ${whereSql} ORDER BY ${orderBy}`).all(params);
+    const [activities, controllerProfile] = await Promise.all([
+      db.prepare(`SELECT * FROM activities WHERE ${whereSql} ORDER BY ${orderBy}`).all(params),
+      getControllerProfile()
+    ]);
     res.setHeader('Content-Type', 'application/vnd.ms-excel');
     res.setHeader('Content-Disposition', 'attachment; filename="futurewhiz-ropa-register.xls"');
-    return res.send(buildActivityExcelXml(activities));
+    return res.send(buildActivityExcelXml(activities, controllerProfile));
   })
 );
 

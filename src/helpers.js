@@ -1,4 +1,4 @@
-import { ACTIVITY_FIELD_META, STATUS_OPTIONS } from './constants.js';
+import { ACTIVITY_FIELD_META, FUTUREWHIZ_ROLE_OPTIONS, STATUS_OPTIONS } from './constants.js';
 
 export function nowIso() {
   return new Date().toISOString();
@@ -49,6 +49,10 @@ export function boolFromInput(value) {
 
 export function statusLabel(status) {
   return STATUS_OPTIONS.find((option) => option.value === status)?.label || status;
+}
+
+export function futurewhizRoleLabel(role) {
+  return FUTUREWHIZ_ROLE_OPTIONS.find((option) => option.value === role)?.label || role || 'Not set';
 }
 
 export function statusClass(status) {
@@ -143,6 +147,34 @@ function contactValue(name, contact, emptyLabel = 'Not applicable') {
   return parts.length ? parts.join(' | ') : emptyLabel;
 }
 
+function compactValue(value) {
+  return String(value || '').trim();
+}
+
+export function controllerProfileSummary(profile, emptyLabel = 'Not set') {
+  if (!profile) return emptyLabel;
+  const parts = [
+    compactValue(profile.company_name),
+    compactValue(profile.contact_name),
+    compactValue(profile.address),
+    compactValue(profile.phone_number),
+    compactValue(profile.email),
+    compactValue(profile.chamber_of_commerce ? `KvK ${profile.chamber_of_commerce}` : '')
+  ].filter(Boolean);
+  return parts.length ? parts.join(' | ') : emptyLabel;
+}
+
+export function securityMeasuresCombinedText(activity) {
+  return compactValue(activity?.security_measures);
+}
+
+export function activityControllerContactValue(activity, controllerProfile) {
+  if (activity?.futurewhiz_role === 'processor') {
+    return contactValue(activity.controller_name, activity.controller_contact_details, 'Not documented');
+  }
+  return controllerProfileSummary(controllerProfile);
+}
+
 function transferDestinationsValue(activity) {
   if (!Number(activity.international_transfers)) return 'No transfers';
   const countries = listValue(activity, 'transfer_countries', 'transfer_countries_json');
@@ -154,16 +186,22 @@ function transferSafeguardsValue(activity) {
   return joinList(listValue(activity, 'transfer_mechanisms', 'transfer_mechanisms_json'), 'Not documented');
 }
 
-const REGISTER_EXPORT_COLUMNS = [
+function registerExportColumns(controllerProfile) {
+  return [
   {
     label: 'Record',
     pdfWidth: 95,
     value: (activity) => [activity.reference_code, activity.activity_name].filter(Boolean).join(' | ')
   },
   {
+    label: 'Futurewhiz role',
+    pdfWidth: 72,
+    value: (activity) => futurewhizRoleLabel(activity.futurewhiz_role)
+  },
+  {
     label: 'Controller name and contact details',
     pdfWidth: 100,
-    value: (activity) => contactValue(activity.controller_name, activity.controller_contact_details, 'Not set')
+    value: (activity) => activityControllerContactValue(activity, controllerProfile)
   },
   {
     label: 'Joint controller name and contact details',
@@ -219,27 +257,30 @@ const REGISTER_EXPORT_COLUMNS = [
   {
     label: 'General description of technical and organisational security measures',
     pdfWidth: 170,
-    value: (activity) => activity.security_measures || 'Not set'
+    value: (activity) => securityMeasuresCombinedText(activity) || 'Not set'
   }
 ];
+}
 
-export function buildActivityCsv(activities) {
-  const headers = REGISTER_EXPORT_COLUMNS.map((column) => column.label);
-  const rows = activities.map((activity) => REGISTER_EXPORT_COLUMNS.map((column) => column.value(activity)));
+export function buildActivityCsv(activities, controllerProfile) {
+  const columns = registerExportColumns(controllerProfile);
+  const headers = columns.map((column) => column.label);
+  const rows = activities.map((activity) => columns.map((column) => column.value(activity)));
   return [headers, ...rows].map((row) => row.map(csvEscape).join(',')).join('\n');
 }
 
-export function buildActivityExcelXml(activities) {
+export function buildActivityExcelXml(activities, controllerProfile) {
+  const columns = registerExportColumns(controllerProfile);
   const rows = activities
     .map((activity) => {
-      const cells = REGISTER_EXPORT_COLUMNS.map((column) => column.value(activity));
+      const cells = columns.map((column) => column.value(activity));
       return `<Row>${cells
         .map((cell) => `<Cell><Data ss:Type="String">${xmlEscape(cell)}</Data></Cell>`)
         .join('')}</Row>`;
     })
     .join('');
 
-  const headerRow = REGISTER_EXPORT_COLUMNS.map(
+  const headerRow = columns.map(
     (column) => `<Cell><Data ss:Type="String">${xmlEscape(column.label)}</Data></Cell>`
   ).join('');
 
@@ -410,7 +451,7 @@ export function registerFlagLabels(activity) {
   if (Number(activity.special_category_data)) flags.push('Special category');
   if (Number(activity.international_transfers)) flags.push('Transfer');
   if (Number(activity.ai_involvement)) flags.push('AI');
-  if (!String(activity.security_measures || '').trim()) flags.push('Missing security');
+  if (!securityMeasuresCombinedText(activity)) flags.push('Missing security');
 
   const nextReviewDate = String(activity.next_review_date || '').trim();
   const isOverdue = Boolean(
@@ -420,12 +461,6 @@ export function registerFlagLabels(activity) {
 
   return flags;
 }
-
-const REGISTER_PDF_COLUMNS = REGISTER_EXPORT_COLUMNS.map((column) => ({
-  label: column.label,
-  width: column.pdfWidth,
-  value: column.value
-}));
 
 // This creates a lightweight text-first PDF without adding another dependency.
 export function buildSimplePdf(title, lines) {
@@ -451,13 +486,18 @@ export function buildSimplePdf(title, lines) {
   return buildPdfDocument(pageStreams);
 }
 
-export function buildRegisterPdf(activities, { title = 'Futurewhiz RoPA register', subtitleLines = [] } = {}) {
+export function buildRegisterPdf(activities, { title = 'Futurewhiz RoPA register', subtitleLines = [], controllerProfile } = {}) {
+  const registerPdfColumns = registerExportColumns(controllerProfile).map((column) => ({
+    label: column.label,
+    width: column.pdfWidth,
+    value: column.value
+  }));
   const pageWidth = 1400;
   const pageHeight = 595;
   const marginX = 20;
   const marginTop = 18;
   const marginBottom = 24;
-  const tableWidth = REGISTER_PDF_COLUMNS.reduce((sum, column) => sum + column.width, 0);
+  const tableWidth = registerPdfColumns.reduce((sum, column) => sum + column.width, 0);
   const titleFontSize = 16;
   const metaFontSize = 8.4;
   const headerFontSize = 7.3;
@@ -503,7 +543,7 @@ export function buildRegisterPdf(activities, { title = 'Futurewhiz RoPA register
     commands.push('0.18 0.32 0.35 RG');
     commands.push('0.6 w');
 
-    REGISTER_PDF_COLUMNS.forEach((column) => {
+    registerPdfColumns.forEach((column) => {
       commands.push(`${x} ${topY - headerHeight} ${column.width} ${headerHeight} re S`);
       commands.push(
         pdfTextBlock(x + rowPaddingX, topY - rowPaddingY - headerFontSize - 3, [column.label], headerFontSize, 9, {
@@ -541,7 +581,7 @@ export function buildRegisterPdf(activities, { title = 'Futurewhiz RoPA register
 
     while (rowIndex < activities.length) {
       const activity = activities[rowIndex];
-      const cellMeta = REGISTER_PDF_COLUMNS.map((column) => {
+      const cellMeta = registerPdfColumns.map((column) => {
         const maxChars = Math.max(4, Math.floor((column.width - rowPaddingX * 2) / 3.8));
         const lines = clampPdfLines(wrapPdfText(column.value(activity) || '-', maxChars), maxCellLines, maxChars);
         return { width: column.width, lines };
@@ -591,12 +631,14 @@ export function buildRegisterPdf(activities, { title = 'Futurewhiz RoPA register
   });
 }
 
-export function activityPdfLines(activity, attachments = [], changes = []) {
+export function activityPdfLines(activity, attachments = [], changes = [], controllerProfile = null) {
   const lines = [];
 
   ACTIVITY_FIELD_META.forEach((field) => {
     lines.push(`${field.label}: ${displayValue(field, activity[field.key])}`);
   });
+
+  lines.push(`Controller identification: ${activityControllerContactValue(activity, controllerProfile)}`);
 
   if (attachments.length) {
     lines.push('');

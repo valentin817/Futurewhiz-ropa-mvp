@@ -16,6 +16,7 @@
       <% if (user) { %>
         <a class="<%= currentPath === '/dashboard' ? 'active' : '' %>" href="/dashboard">Dashboard</a>
         <a class="<%= currentPath.startsWith('/activities') ? 'active' : '' %>" href="/activities">RoPA register</a>
+        <a class="<%= currentPath === '/controller-identification' ? 'active' : '' %>" href="/controller-identification">Identification of the controller</a>
         <a class="<%= currentPath === '/intake' ? 'active' : '' %>" href="/intake">Intake</a>
         <a href="/activities/new">New activity</a>
         <% if (user.role === 'admin') { %>

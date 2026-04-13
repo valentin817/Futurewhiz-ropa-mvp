@@ -1,0 +1,85 @@
+<%- include('partials/header', { pageTitle, user, currentPath, flash }) %>
+
+<section class="page-header">
+  <div>
+    <span class="eyebrow">Global profile</span>
+    <h1>Identification of the controller</h1>
+    <p>Maintain the Futurewhiz controller details once and reuse them across controller-side RoPA records.</p>
+  </div>
+</section>
+
+<% if (errors.length > 0) { %>
+  <section class="panel error-panel">
+    <h2>Please fix the following</h2>
+    <ul class="bullet-list">
+      <% errors.forEach((error) => { %>
+        <li><%= error %></li>
+      <% }) %>
+    </ul>
+  </section>
+<% } %>
+
+<section class="panel compliance-sheet">
+  <div class="section-heading">
+    <div>
+      <h2>Futurewhiz controller identity</h2>
+    </div>
+  </div>
+
+  <form method="post" action="/controller-identification" class="stack-lg">
+    <div class="sheet-grid">
+      <label class="sheet-row">
+        <span class="sheet-label">Company name</span>
+        <span class="sheet-value">
+          <input type="text" name="company_name" value="<%= controllerProfile.company_name %>" <%= canEditControllerProfile ? 'required' : 'readonly' %> />
+        </span>
+      </label>
+
+      <label class="sheet-row">
+        <span class="sheet-label">Contact</span>
+        <span class="sheet-value">
+          <input type="text" name="contact_name" value="<%= controllerProfile.contact_name %>" <%= canEditControllerProfile ? 'required' : 'readonly' %> />
+        </span>
+      </label>
+
+      <label class="sheet-row">
+        <span class="sheet-label">Address</span>
+        <span class="sheet-value">
+          <textarea name="address" rows="3" <%= canEditControllerProfile ? '' : 'readonly' %>><%= controllerProfile.address %></textarea>
+        </span>
+      </label>
+
+      <label class="sheet-row">
+        <span class="sheet-label">Phone number</span>
+        <span class="sheet-value">
+          <input type="text" name="phone_number" value="<%= controllerProfile.phone_number %>" <%= canEditControllerProfile ? '' : 'readonly' %> />
+        </span>
+      </label>
+
+      <label class="sheet-row">
+        <span class="sheet-label">E-mail</span>
+        <span class="sheet-value">
+          <input type="email" name="email" value="<%= controllerProfile.email %>" <%= canEditControllerProfile ? 'required' : 'readonly' %> />
+        </span>
+      </label>
+
+      <label class="sheet-row">
+        <span class="sheet-label">Chamber of commerce</span>
+        <span class="sheet-value">
+          <input type="text" name="chamber_of_commerce" value="<%= controllerProfile.chamber_of_commerce %>" <%= canEditControllerProfile ? '' : 'readonly' %> />
+        </span>
+      </label>
+    </div>
+
+    <% if (canEditControllerProfile) { %>
+      <div class="form-actions">
+        <button class="button" type="submit">Save controller identification</button>
+        <a class="button ghost" href="/activities">Back to register</a>
+      </div>
+    <% } else { %>
+      <div class="muted">Legal/privacy reviewers and admins can edit this page.</div>
+    <% } %>
+  </form>
+</section>
+
+<%- include('partials/footer') %>

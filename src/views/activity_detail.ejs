@@ -24,8 +24,18 @@
     </div>
     <dl class="detail-list">
       <div>
+        <dt>Futurewhiz role</dt>
+        <dd><span class="role-badge <%= activity.futurewhiz_role %>"><%= futurewhizRoleLabel(activity.futurewhiz_role) %></span></dd>
+      </div>
+      <div>
         <dt>Controller</dt>
-        <dd><%= activity.controller_name %> <span class="muted"><%= activity.controller_contact_details %></span></dd>
+        <dd>
+          <% if (activity.futurewhiz_role === 'processor') { %>
+            <%= activity.controller_name || 'Not documented' %> <span class="muted"><%= activity.controller_contact_details || '' %></span>
+          <% } else { %>
+            <%= controllerProfile.company_name || 'Not set' %> <span class="muted"><%= controllerProfileContactDetails(controllerProfile) || '' %></span>
+          <% } %>
+        </dd>
       </div>
       <div>
         <dt>Joint controller</dt>
@@ -67,6 +77,31 @@
         </dd>
       </div>
     </dl>
+  </article>
+
+  <article class="panel">
+    <div class="section-heading">
+      <div>
+        <h2>Identification of the controller</h2>
+      </div>
+      <a class="button ghost" href="/controller-identification">Open page</a>
+    </div>
+
+    <% if (activity.futurewhiz_role === 'controller') { %>
+      <dl class="detail-list">
+        <div><dt>Company name</dt><dd><%= controllerProfile.company_name || 'Not set' %></dd></div>
+        <div><dt>Contact</dt><dd><%= controllerProfile.contact_name || 'Not set' %></dd></div>
+        <div><dt>Address</dt><dd><%= controllerProfile.address || 'Not set' %></dd></div>
+        <div><dt>Phone number</dt><dd><%= controllerProfile.phone_number || 'Not set' %></dd></div>
+        <div><dt>Email</dt><dd><%= controllerProfile.email || 'Not set' %></dd></div>
+        <div><dt>Chamber of commerce</dt><dd><%= controllerProfile.chamber_of_commerce || 'Not set' %></dd></div>
+      </dl>
+    <% } else { %>
+      <dl class="detail-list">
+        <div><dt>Controller name</dt><dd><%= activity.controller_name || 'Not documented' %></dd></div>
+        <div><dt>Controller contact</dt><dd><%= activity.controller_contact_details || 'Not documented' %></dd></div>
+      </dl>
+    <% } %>
   </article>
 
   <article class="panel security-panel">

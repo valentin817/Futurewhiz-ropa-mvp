@@ -52,15 +52,18 @@ export const BOOLEAN_FILTERS = [
   { value: 'no', label: 'No' }
 ];
 
-export const ROPA_CONTACT_DEFAULTS = {
-  controller_name: 'Futurewhiz B.V.',
-  controller_contact_details: 'privacy@futurewhiz.com',
-  joint_controller_name: '',
-  joint_controller_contact_details: '',
-  controller_representative_name: '',
-  controller_representative_contact_details: '',
-  dpo_name: 'Futurewhiz Legal & Privacy Team',
-  dpo_contact_details: 'privacy@futurewhiz.com'
+export const FUTUREWHIZ_ROLE_OPTIONS = [
+  { value: 'controller', label: 'Futurewhiz acts as controller' },
+  { value: 'processor', label: 'Futurewhiz acts as processor' }
+];
+
+export const CONTROLLER_PROFILE_DEFAULTS = {
+  company_name: 'Futurewhiz B.V.',
+  contact_name: 'Futurewhiz Legal & Privacy Team',
+  address: '',
+  phone_number: '',
+  email: 'privacy@futurewhiz.com',
+  chamber_of_commerce: ''
 };
 
 export const CONTROLLED_VOCABULARY_SEEDS = [
@@ -155,6 +158,7 @@ export const CONTROLLED_VOCABULARY_SEEDS = [
 export const ACTIVITY_FIELD_META = [
   { key: 'activity_name', label: 'Activity name', type: 'text' },
   { key: 'short_description', label: 'Short description', type: 'text' },
+  { key: 'futurewhiz_role', label: 'Futurewhiz role', type: 'text' },
   { key: 'controller_name', label: 'Controller name', type: 'text' },
   { key: 'controller_contact_details', label: 'Controller contact details', type: 'text' },
   { key: 'joint_controller_name', label: 'Joint controller name', type: 'text' },
@@ -211,8 +215,8 @@ export const REQUIRED_ACTIVITY_FIELDS = [
   'department',
   'product_service',
   'purpose_of_processing',
+  'futurewhiz_role',
   'lawful_basis',
-  'security_measures',
   'status'
 ];
 

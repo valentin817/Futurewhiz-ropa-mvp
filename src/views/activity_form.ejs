@@ -201,20 +201,46 @@
   <section class="panel form-section">
     <div class="section-heading">
       <div>
-        <h2>Article 30 parties</h2>
-        <p>Capture the controller and any optional joint-controller, representative, or DPO details that should appear in the register.</p>
+        <h2>RoPA role and parties</h2>
+        <p>Choose whether Futurewhiz acts as controller or processor, then complete the relevant Article 30 party details.</p>
       </div>
     </div>
 
     <div class="form-grid">
       <label>
-        <span>Controller name *</span>
-        <input type="text" name="controller_name" value="<%= formValues.controller_name %>" required />
+        <span>Futurewhiz role *</span>
+        <select name="futurewhiz_role" required data-role-select>
+          <% futurewhizRoleOptions.forEach((option) => { %>
+            <option value="<%= option.value %>" <%= formValues.futurewhiz_role === option.value ? 'selected' : '' %>><%= option.label %></option>
+          <% }) %>
+        </select>
       </label>
 
-      <label>
+      <div class="controller-preview-card" data-controller-preview>
+        <div class="controller-preview-header">
+          <strong>Identification of the controller</strong>
+          <a class="inline-link" href="/controller-identification">Open global page</a>
+        </div>
+        <dl class="mini-detail-list">
+          <div><dt>Company</dt><dd><%= controllerProfile.company_name || 'Not set' %></dd></div>
+          <div><dt>Contact</dt><dd><%= controllerProfile.contact_name || 'Not set' %></dd></div>
+          <div><dt>Address</dt><dd><%= controllerProfile.address || 'Not set' %></dd></div>
+          <div><dt>Phone</dt><dd><%= controllerProfile.phone_number || 'Not set' %></dd></div>
+          <div><dt>Email</dt><dd><%= controllerProfile.email || 'Not set' %></dd></div>
+          <div><dt>Chamber of Commerce</dt><dd><%= controllerProfile.chamber_of_commerce || 'Not set' %></dd></div>
+        </dl>
+      </div>
+
+      <label class="processor-only">
+        <span>Controller name *</span>
+        <input type="text" name="controller_name" value="<%= formValues.controller_name %>" />
+        <div class="field-help">Required when Futurewhiz acts as processor.</div>
+      </label>
+
+      <label class="processor-only">
         <span>Controller contact details *</span>
-        <textarea name="controller_contact_details" rows="3" required><%= formValues.controller_contact_details %></textarea>
+        <textarea name="controller_contact_details" rows="3"><%= formValues.controller_contact_details %></textarea>
+        <div class="field-help">Capture the customer or partner contact details that act as controller for this activity.</div>
       </label>
 
       <label>
@@ -383,5 +409,26 @@
     <a class="button ghost" href="<%= activity ? `/activities/${activity.id}` : '/activities' %>">Cancel</a>
   </div>
 </form>
+
+<script>
+  const roleSelect = document.querySelector('[data-role-select]');
+  const processorFields = document.querySelectorAll('.processor-only');
+  const controllerPreview = document.querySelector('[data-controller-preview]');
+
+  const applyRoleState = () => {
+    const isProcessor = roleSelect && roleSelect.value === 'processor';
+    processorFields.forEach((element) => {
+      element.hidden = !isProcessor;
+    });
+    if (controllerPreview) {
+      controllerPreview.classList.toggle('muted-card', isProcessor);
+    }
+  };
+
+  if (roleSelect) {
+    roleSelect.addEventListener('change', applyRoleState);
+    applyRoleState();
+  }
+</script>
 
 <%- include('partials/footer') %>

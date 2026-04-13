@@ -13,8 +13,31 @@
   </div>
 </section>
 
+<%
+  const roleTabs = [
+    { href: '/activities', title: 'All activities', active: !filters.futurewhiz_role },
+    {
+      href: '/activities?futurewhiz_role=controller',
+      title: 'Futurewhiz as controller',
+      active: filters.futurewhiz_role === 'controller'
+    },
+    {
+      href: '/activities?futurewhiz_role=processor',
+      title: 'Futurewhiz as processor',
+      active: filters.futurewhiz_role === 'processor'
+    }
+  ];
+%>
+
+<section class="role-tab-strip">
+  <% roleTabs.forEach((tab) => { %>
+    <a class="role-tab <%= tab.active ? 'active' : '' %>" href="<%= tab.href %>"><%= tab.title %></a>
+  <% }) %>
+</section>
+
 <section class="panel">
   <form class="filters-grid" method="get" action="/activities">
+    <input type="hidden" name="futurewhiz_role" value="<%= filters.futurewhiz_role %>" />
     <label class="span-2">
       <span>Keyword search</span>
       <input type="text" name="q" value="<%= filters.q %>" placeholder="Search activity, purpose, vendor, security measures, or reference" />
@@ -242,6 +265,7 @@
       <thead>
         <tr>
           <th class="register-col-record">Record</th>
+          <th class="register-col-role">Futurewhiz role</th>
           <th class="register-col-controller">Controller name and contact details</th>
           <th class="register-col-joint-controller">Joint controller name and contact details</th>
           <th class="register-col-representative">Controller representative name and contact details</th>
@@ -259,7 +283,7 @@
       <tbody>
         <% if (activities.length === 0) { %>
           <tr>
-            <td colspan="13">No activities matched the selected filters.</td>
+            <td colspan="14">No activities matched the selected filters.</td>
           </tr>
         <% } %>
 
@@ -271,9 +295,17 @@
               <div class="muted"><%= activity.department %> · <%= activity.product_service %></div>
               <div class="line-clamp-3"><%= activity.short_description || 'No summary provided.' %></div>
             </td>
+            <td class="register-col-role">
+              <span class="role-badge <%= activity.futurewhiz_role %>"><%= futurewhizRoleLabel(activity.futurewhiz_role) %></span>
+            </td>
             <td class="register-col-controller">
-              <strong><%= activity.controller_name %></strong>
-              <div class="muted"><%= activity.controller_contact_details %></div>
+              <% if (activity.futurewhiz_role === 'processor') { %>
+                <strong><%= activity.controller_name || 'Not documented' %></strong>
+                <div class="muted"><%= activity.controller_contact_details || 'Not documented' %></div>
+              <% } else { %>
+                <strong><%= controllerProfile.company_name || 'Not set' %></strong>
+                <div class="muted"><%= controllerProfileContactDetails(controllerProfile) || 'Not set' %></div>
+              <% } %>
             </td>
             <td class="register-col-joint-controller">
               <% if (activity.joint_controller_name || activity.joint_controller_contact_details) { %>

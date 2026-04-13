@@ -1,7 +1,7 @@
 import sqlite3 from 'sqlite3';
 import fs from 'fs';
 import path from 'path';
-import { CONTROLLED_VOCABULARY_SEEDS, ROPA_CONTACT_DEFAULTS, STATUS_OPTIONS } from './constants.js';
+import { CONTROLLER_PROFILE_DEFAULTS, CONTROLLED_VOCABULARY_SEEDS, STATUS_OPTIONS } from './constants.js';
 import { addMonths, nowIso, stringifyJsonArray, todayIsoDate } from './helpers.js';
 
 const DB_PATH = path.resolve(process.cwd(), process.env.DB_PATH || 'data/ropa.db');
@@ -121,6 +121,29 @@ async function seedUsers(database) {
   }
 }
 
+async function ensureControllerProfile(database) {
+  const existing = await compileStatement(database, 'SELECT COUNT(*) AS count FROM controller_profile').get();
+  if (existing.count > 0) return;
+
+  await compileStatement(
+    database,
+    `
+      INSERT INTO controller_profile (
+        company_name, contact_name, address, phone_number, email, chamber_of_commerce, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `
+  ).run(
+    CONTROLLER_PROFILE_DEFAULTS.company_name,
+    CONTROLLER_PROFILE_DEFAULTS.contact_name,
+    CONTROLLER_PROFILE_DEFAULTS.address,
+    CONTROLLER_PROFILE_DEFAULTS.phone_number,
+    CONTROLLER_PROFILE_DEFAULTS.email,
+    CONTROLLER_PROFILE_DEFAULTS.chamber_of_commerce,
+    nowIso(),
+    nowIso()
+  );
+}
+
 async function seedActivities(database) {
   const existing = await compileStatement(database, 'SELECT COUNT(*) AS count FROM activities').get();
   if (existing.count > 0) return;
@@ -173,7 +196,10 @@ async function seedActivities(database) {
       last_review_date: '2026-02-14',
       next_review_date: addMonths('2026-02-14', 12),
       review_interval_months: 12,
-      comments_notes: 'Includes teacher-facing reporting where the school is controller for local inputs.'
+      comments_notes: 'Includes teacher-facing reporting where the school is controller for local inputs.',
+      futurewhiz_role: 'controller',
+      controller_name: CONTROLLER_PROFILE_DEFAULTS.company_name,
+      controller_contact_details: CONTROLLER_PROFILE_DEFAULTS.email
     },
     {
       reference: 'ROPA-0002',
@@ -217,7 +243,10 @@ async function seedActivities(database) {
       last_review_date: '2025-10-08',
       next_review_date: addMonths('2025-10-08', 12),
       review_interval_months: 12,
-      comments_notes: ''
+      comments_notes: '',
+      futurewhiz_role: 'controller',
+      controller_name: CONTROLLER_PROFILE_DEFAULTS.company_name,
+      controller_contact_details: CONTROLLER_PROFILE_DEFAULTS.email
     },
     {
       reference: 'ROPA-0003',
@@ -261,7 +290,10 @@ async function seedActivities(database) {
       last_review_date: '2025-09-12',
       next_review_date: addMonths('2025-09-12', 6),
       review_interval_months: 6,
-      comments_notes: 'Medical leave documents remain in a segregated sub-process.'
+      comments_notes: 'Medical leave documents remain in a segregated sub-process.',
+      futurewhiz_role: 'controller',
+      controller_name: CONTROLLER_PROFILE_DEFAULTS.company_name,
+      controller_contact_details: CONTROLLER_PROFILE_DEFAULTS.email
     },
     {
       reference: 'ROPA-0004',
@@ -305,7 +337,10 @@ async function seedActivities(database) {
       last_review_date: '2025-04-01',
       next_review_date: '2025-10-01',
       review_interval_months: 6,
-      comments_notes: 'Legacy import from spreadsheet identified inconsistent vendor names.'
+      comments_notes: 'Legacy import from spreadsheet identified inconsistent vendor names.',
+      futurewhiz_role: 'controller',
+      controller_name: CONTROLLER_PROFILE_DEFAULTS.company_name,
+      controller_contact_details: CONTROLLER_PROFILE_DEFAULTS.email
     },
     {
       reference: 'ROPA-0005',
@@ -350,7 +385,10 @@ async function seedActivities(database) {
       last_review_date: '2026-01-20',
       next_review_date: addMonths('2026-01-20', 6),
       review_interval_months: 6,
-      comments_notes: 'Launch review requested before expansion to Scoyo.'
+      comments_notes: 'Launch review requested before expansion to Scoyo.',
+      futurewhiz_role: 'controller',
+      controller_name: CONTROLLER_PROFILE_DEFAULTS.company_name,
+      controller_contact_details: CONTROLLER_PROFILE_DEFAULTS.email
     },
     {
       reference: 'ROPA-0006',
@@ -393,10 +431,21 @@ async function seedActivities(database) {
       last_review_date: '',
       next_review_date: todayIsoDate(),
       review_interval_months: 6,
-      comments_notes: 'Good example of a legacy record that needs structured completion.'
+      comments_notes: 'Good example of a legacy record that needs structured completion.',
+      futurewhiz_role: 'processor',
+      controller_name: 'Partner school',
+      controller_contact_details: 'School onboarding contact on file'
     }
   ].map((activity) => ({
-    ...ROPA_CONTACT_DEFAULTS,
+    controller_name: CONTROLLER_PROFILE_DEFAULTS.company_name,
+    controller_contact_details: CONTROLLER_PROFILE_DEFAULTS.email,
+    joint_controller_name: '',
+    joint_controller_contact_details: '',
+    controller_representative_name: '',
+    controller_representative_contact_details: '',
+    dpo_name: '',
+    dpo_contact_details: '',
+    futurewhiz_role: 'controller',
     ...activity
   }));
 
@@ -417,13 +466,13 @@ async function seedActivities(database) {
         legal_reviewer_id, legal_reviewer_name, legal_reviewer_email, department, product_service, purpose_of_processing,
         data_subject_categories_json, personal_data_categories_json, lawful_basis, recipient_categories_json,
         processors_vendors_json, international_transfers, transfer_mechanisms_json, transfer_countries_json,
-        retention_period, source_of_personal_data, children_data, special_category_data, ai_involvement,
+        retention_period, source_of_personal_data, children_data, special_category_data, ai_involvement, futurewhiz_role,
         security_measures, vendor_review_ref, vendor_review_url, dpia_ref, dpia_url, lia_ref, lia_url,
         privacy_notice_ref, privacy_notice_url, security_review_ref, security_review_url, ai_tool_review_ref,
         ai_tool_review_url, status, workflow_notes, review_interval_months, last_updated_by_id, last_updated_by_name,
         last_updated_by_email, last_updated_at, last_review_date, next_review_date, comments_notes, created_by_id,
         created_by_name, created_by_email, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
   );
 
@@ -482,6 +531,7 @@ async function seedActivities(database) {
       activity.children_data,
       activity.special_category_data,
       activity.ai_involvement,
+      activity.futurewhiz_role,
       activity.security_measures,
       activity.vendor_review_ref,
       activity.vendor_review_url,
@@ -575,17 +625,18 @@ async function ensureActivityColumns(database) {
   const rows = await compileStatement(database, 'PRAGMA table_info(activities)').all();
   const existingColumns = new Set(rows.map((row) => row.name));
   const additions = [
-    ['controller_name', `TEXT NOT NULL DEFAULT '${ROPA_CONTACT_DEFAULTS.controller_name.replaceAll("'", "''")}'`],
+    ['controller_name', `TEXT NOT NULL DEFAULT '${CONTROLLER_PROFILE_DEFAULTS.company_name.replaceAll("'", "''")}'`],
     [
       'controller_contact_details',
-      `TEXT NOT NULL DEFAULT '${ROPA_CONTACT_DEFAULTS.controller_contact_details.replaceAll("'", "''")}'`
+      `TEXT NOT NULL DEFAULT '${CONTROLLER_PROFILE_DEFAULTS.email.replaceAll("'", "''")}'`
     ],
     ['joint_controller_name', `TEXT NOT NULL DEFAULT ''`],
     ['joint_controller_contact_details', `TEXT NOT NULL DEFAULT ''`],
     ['controller_representative_name', `TEXT NOT NULL DEFAULT ''`],
     ['controller_representative_contact_details', `TEXT NOT NULL DEFAULT ''`],
-    ['dpo_name', `TEXT NOT NULL DEFAULT '${ROPA_CONTACT_DEFAULTS.dpo_name.replaceAll("'", "''")}'`],
-    ['dpo_contact_details', `TEXT NOT NULL DEFAULT '${ROPA_CONTACT_DEFAULTS.dpo_contact_details.replaceAll("'", "''")}'`]
+    ['dpo_name', `TEXT NOT NULL DEFAULT '${CONTROLLER_PROFILE_DEFAULTS.contact_name.replaceAll("'", "''")}'`],
+    ['dpo_contact_details', `TEXT NOT NULL DEFAULT '${CONTROLLER_PROFILE_DEFAULTS.email.replaceAll("'", "''")}'`],
+    ['futurewhiz_role', `TEXT NOT NULL DEFAULT 'controller'`]
   ];
 
   for (const [name, definition] of additions) {
@@ -602,13 +653,14 @@ async function ensureActivityColumns(database) {
         controller_name = COALESCE(NULLIF(controller_name, ''), ?),
         controller_contact_details = COALESCE(NULLIF(controller_contact_details, ''), ?),
         dpo_name = COALESCE(NULLIF(dpo_name, ''), ?),
-        dpo_contact_details = COALESCE(NULLIF(dpo_contact_details, ''), ?)
+        dpo_contact_details = COALESCE(NULLIF(dpo_contact_details, ''), ?),
+        futurewhiz_role = COALESCE(NULLIF(futurewhiz_role, ''), 'controller')
     `
   ).run(
-    ROPA_CONTACT_DEFAULTS.controller_name,
-    ROPA_CONTACT_DEFAULTS.controller_contact_details,
-    ROPA_CONTACT_DEFAULTS.dpo_name,
-    ROPA_CONTACT_DEFAULTS.dpo_contact_details
+    CONTROLLER_PROFILE_DEFAULTS.company_name,
+    CONTROLLER_PROFILE_DEFAULTS.email,
+    CONTROLLER_PROFILE_DEFAULTS.contact_name,
+    CONTROLLER_PROFILE_DEFAULTS.email
   );
 }
 
@@ -642,6 +694,18 @@ export async function initDb() {
         label TEXT NOT NULL,
         sort_order INTEGER NOT NULL DEFAULT 0,
         active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS controller_profile (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        company_name TEXT NOT NULL DEFAULT 'Futurewhiz B.V.',
+        contact_name TEXT NOT NULL DEFAULT 'Futurewhiz Legal & Privacy Team',
+        address TEXT NOT NULL DEFAULT '',
+        phone_number TEXT NOT NULL DEFAULT '',
+        email TEXT NOT NULL DEFAULT 'privacy@futurewhiz.com',
+        chamber_of_commerce TEXT NOT NULL DEFAULT '',
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       );
@@ -681,6 +745,7 @@ export async function initDb() {
         children_data INTEGER NOT NULL DEFAULT 0,
         special_category_data INTEGER NOT NULL DEFAULT 0,
         ai_involvement INTEGER NOT NULL DEFAULT 0,
+        futurewhiz_role TEXT NOT NULL DEFAULT 'controller',
         security_measures TEXT NOT NULL DEFAULT '',
         vendor_review_ref TEXT,
         vendor_review_url TEXT,
@@ -799,6 +864,7 @@ export async function initDb() {
   await ensureActivityColumns(db);
   await seedVocabulary(db);
   await seedUsers(db);
+  await ensureControllerProfile(db);
   await seedActivities(db);
 
   return db;
