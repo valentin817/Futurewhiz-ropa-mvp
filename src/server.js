@@ -1015,14 +1015,6 @@ app.post('/logout', (req, res) => {
 });
 
 app.get(
-  '/dashboard',
-  ensureAuth,
-  asyncHandler(async (req, res) => {
-    return res.redirect('/activities');
-  })
-);
-
-app.get(
   '/controller-identification',
   ensureAuth,
   asyncHandler(async (req, res) => {
