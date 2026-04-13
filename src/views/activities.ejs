@@ -208,25 +208,41 @@
     <section class="panel">
       <p class="muted">No activities matched the selected filters.</p>
     </section>
-  <% } %>
-
-  <% activities.forEach((activity) => { %>
-    <a class="register-card register-card-link panel" href="/activities/<%= activity.id %>">
-      <div class="register-card-summary">
-        <div class="register-card-primary">
-          <strong><%= activity.activity_name %></strong>
-          <span class="muted"><%= activity.reference_code %></span>
-        </div>
-        <div class="register-card-meta">
-          <span><%= activity.department || 'No team set' %></span>
-          <span class="line-clamp-2"><%= activity.purpose_of_processing || 'No purpose recorded' %></span>
-        </div>
-        <div class="register-card-status">
-          <span class="status-pill <%= statusClass(activity.status) %>"><%= statusLabel(activity.status) %></span>
-        </div>
+  <% } else { %>
+    <section class="panel register-grid-panel">
+      <div class="register-grid-head">
+        <div>Activity</div>
+        <div>Department</div>
+        <div>Product</div>
+        <div>Lawful basis</div>
+        <div>Status</div>
+        <div>Next review</div>
+        <div>Owner</div>
       </div>
-    </a>
-  <% }) %>
+
+      <% activities.forEach((activity) => { %>
+        <a class="register-grid-row" href="/activities/<%= activity.id %>">
+          <div class="register-grid-activity">
+            <strong><%= activity.activity_name %></strong>
+            <span class="muted"><%= activity.short_description || 'No short description provided.' %></span>
+          </div>
+          <div><%= activity.department || 'Not set' %></div>
+          <div><%= activity.product_service || 'Not set' %></div>
+          <div><%= activity.lawful_basis || 'Not set' %></div>
+          <div>
+            <span class="status-pill <%= statusClass(activity.status) %>"><%= statusLabel(activity.status) %></span>
+          </div>
+          <div class="<%= activity.is_overdue ? 'review-date overdue' : 'review-date' %>">
+            <%= activity.next_review_date ? formatDate(activity.next_review_date) : 'Not set' %>
+            <% if (activity.is_overdue) { %>
+              <span>(overdue)</span>
+            <% } %>
+          </div>
+          <div><%= activity.business_owner_name || activity.business_owner_email || 'Not set' %></div>
+        </a>
+      <% }) %>
+    </section>
+  <% } %>
 </section>
 
 <script>
