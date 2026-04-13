@@ -422,17 +422,6 @@ th {
   font-size: 1.35rem;
 }
 
-.saved-view-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  margin-bottom: 10px;
-  color: var(--brand);
-  font-size: 0.76rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 .saved-view-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
