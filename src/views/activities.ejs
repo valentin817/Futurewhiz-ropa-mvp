@@ -4,34 +4,13 @@
   <div>
     <span class="eyebrow">Register</span>
     <h1>RoPA register</h1>
-    <p>Review processing activities as expandable records, then open full detail when needed.</p>
+    <p>Open a processing activity to view the full record, then return with the back arrow or the Register tab.</p>
   </div>
   <div class="header-actions">
     <button class="button secondary" type="button" data-search-toggle aria-expanded="<%= activeFilters.length ? 'true' : 'false' %>">Search</button>
+    <a class="button secondary" href="/exports/register.pdf<%= exportQuery ? `?${exportQuery}` : '' %>">Export PDF</a>
     <a class="button" href="/activities/new">New activity</a>
   </div>
-</section>
-
-<%
-  const roleTabs = [
-    { href: '/activities', title: 'All activities', active: !filters.futurewhiz_role },
-    {
-      href: '/activities?futurewhiz_role=controller',
-      title: 'Futurewhiz as controller',
-      active: filters.futurewhiz_role === 'controller'
-    },
-    {
-      href: '/activities?futurewhiz_role=processor',
-      title: 'Futurewhiz as processor',
-      active: filters.futurewhiz_role === 'processor'
-    }
-  ];
-%>
-
-<section class="role-tab-strip">
-  <% roleTabs.forEach((tab) => { %>
-    <a class="role-tab <%= tab.active ? 'active' : '' %>" href="<%= tab.href %>"><%= tab.title %></a>
-  <% }) %>
 </section>
 
 <section class="panel search-panel <%= activeFilters.length ? 'is-open' : '' %>" data-search-panel <%= activeFilters.length ? '' : 'hidden' %>>
@@ -41,16 +20,23 @@
       <p>Expand the full filter set only when you need it.</p>
     </div>
     <div class="header-actions">
-      <a class="button secondary" href="/exports/register.pdf<%= exportQuery ? `?${exportQuery}` : '' %>">Export PDF</a>
       <a class="button secondary" href="/exports/register.xls<%= exportQuery ? `?${exportQuery}` : '' %>">Export Excel</a>
     </div>
   </div>
 
   <form class="filters-grid" method="get" action="/activities">
-    <input type="hidden" name="futurewhiz_role" value="<%= filters.futurewhiz_role %>" />
     <label class="span-2">
       <span>Keyword search</span>
       <input type="text" name="q" value="<%= filters.q %>" placeholder="Search activity, purpose, vendor, security measures, or reference" />
+    </label>
+
+    <label>
+      <span>Futurewhiz role</span>
+      <select name="futurewhiz_role">
+        <option value="">All roles</option>
+        <option value="controller" <%= filters.futurewhiz_role === 'controller' ? 'selected' : '' %>>Futurewhiz as controller</option>
+        <option value="processor" <%= filters.futurewhiz_role === 'processor' ? 'selected' : '' %>>Futurewhiz as processor</option>
+      </select>
     </label>
 
     <label>
@@ -204,7 +190,7 @@
 
     <div class="filter-actions span-2">
       <button class="button" type="submit">Apply filters</button>
-      <a class="button ghost" href="<%= filters.futurewhiz_role ? `/activities?futurewhiz_role=${filters.futurewhiz_role}` : '/activities' %>">Reset</a>
+      <a class="button ghost" href="/activities">Reset</a>
     </div>
   </form>
 </section>
@@ -218,13 +204,6 @@
     </div>
   <% } %>
 
-  <div class="register-toolbar">
-    <div>
-      <h2>Processing activities</h2>
-      <p><strong><%= resultCount %></strong> matching activities.</p>
-    </div>
-  </div>
-
   <% if (activities.length === 0) { %>
     <section class="panel">
       <p class="muted">No activities matched the selected filters.</p>
@@ -232,8 +211,8 @@
   <% } %>
 
   <% activities.forEach((activity) => { %>
-    <details class="register-card panel">
-      <summary class="register-card-summary">
+    <a class="register-card register-card-link panel" href="/activities/<%= activity.id %>">
+      <div class="register-card-summary">
         <div class="register-card-primary">
           <strong><%= activity.activity_name %></strong>
           <span class="muted"><%= activity.reference_code %></span>
@@ -245,67 +224,8 @@
         <div class="register-card-status">
           <span class="status-pill <%= statusClass(activity.status) %>"><%= statusLabel(activity.status) %></span>
         </div>
-      </summary>
-
-      <div class="register-card-body">
-        <section class="detail-grid compact-grid">
-          <article class="panel inset-panel">
-            <div class="section-heading">
-              <div><h2>Ownership and accountability</h2></div>
-            </div>
-            <dl class="detail-list">
-              <div><dt>Futurewhiz role</dt><dd><span class="role-badge <%= activity.futurewhiz_role %>"><%= futurewhizRoleLabel(activity.futurewhiz_role) %></span></dd></div>
-              <div><dt>Controller</dt><dd><%= activity.futurewhiz_role === 'processor' ? (activity.controller_name || 'Not documented') : (controllerProfile.company_name || 'Not set') %> <span class="muted"><%= activity.futurewhiz_role === 'processor' ? (activity.controller_contact_details || '') : (controllerProfileContactDetails(controllerProfile) || '') %></span></dd></div>
-              <div><dt>Business owner</dt><dd><%= activity.business_owner_name %> <span class="muted"><%= activity.business_owner_email %></span></dd></div>
-              <div><dt>Legal reviewer</dt><dd><%= activity.legal_reviewer_name || 'Not assigned' %> <span class="muted"><%= activity.legal_reviewer_email %></span></dd></div>
-              <div><dt>Last updated</dt><dd><%= formatDateTime(activity.last_updated_at) %></dd></div>
-              <div><dt>Next review</dt><dd><%= activity.next_review_date ? formatDate(activity.next_review_date) : 'Not set' %> <% if (activity.is_overdue) { %><span class="flag danger">Overdue</span><% } %></dd></div>
-            </dl>
-          </article>
-
-          <article class="panel inset-panel security-panel">
-            <div class="section-heading">
-              <div><h2>Security measures</h2></div>
-            </div>
-            <div class="rich-text"><%= activity.security_measures || 'Missing security measures' %></div>
-          </article>
-        </section>
-
-        <section class="detail-grid compact-grid">
-          <article class="panel inset-panel">
-            <h2>Processing details</h2>
-            <dl class="detail-list">
-              <div><dt>Short description</dt><dd><%= activity.short_description || 'Not set' %></dd></div>
-              <div><dt>Product / service</dt><dd><%= activity.product_service || 'Not set' %></dd></div>
-              <div><dt>Lawful basis</dt><dd><%= activity.lawful_basis || 'Not set' %></dd></div>
-              <div><dt>Data subjects</dt><dd><%= activity.data_subject_categories.length ? activity.data_subject_categories.join(', ') : 'Not set' %></dd></div>
-              <div><dt>Personal data</dt><dd><%= activity.personal_data_categories.length ? activity.personal_data_categories.join(', ') : 'Not set' %></dd></div>
-              <div><dt>Recipients</dt><dd><%= activity.recipient_categories.length ? activity.recipient_categories.join(', ') : 'Not set' %></dd></div>
-              <div><dt>Processors / vendors</dt><dd><%= activity.processors_vendors.length ? activity.processors_vendors.join(', ') : 'Not set' %></dd></div>
-              <div><dt>Retention period</dt><dd><%= activity.retention_period || 'Not set' %></dd></div>
-            </dl>
-          </article>
-
-          <article class="panel inset-panel">
-            <h2>Linked compliance items</h2>
-            <dl class="detail-list">
-              <div><dt>Vendor review / DPA</dt><dd><%= activity.vendor_review_ref || 'Missing' %></dd></div>
-              <div><dt>DPIA</dt><dd><%= activity.dpia_ref || 'Missing' %></dd></div>
-              <div><dt>LIA</dt><dd><%= activity.lia_ref || 'Not linked' %></dd></div>
-              <div><dt>Privacy notice</dt><dd><%= activity.privacy_notice_ref || 'Not linked' %></dd></div>
-              <div><dt>Security review</dt><dd><%= activity.security_review_ref || 'Missing' %></dd></div>
-              <div><dt>AI tool review</dt><dd><%= activity.ai_tool_review_ref || 'Not linked' %></dd></div>
-            </dl>
-          </article>
-        </section>
-
-        <div class="register-card-actions">
-          <a class="button secondary" href="/activities/<%= activity.id %>">Open full detail</a>
-          <a class="button ghost" href="/activities/<%= activity.id %>/edit">Edit</a>
-          <a class="button ghost" href="/activities/<%= activity.id %>/export.pdf">Export PDF</a>
-        </div>
       </div>
-    </details>
+    </a>
   <% }) %>
 </section>
 

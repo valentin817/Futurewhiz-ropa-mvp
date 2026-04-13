@@ -511,6 +511,19 @@ th {
   overflow: hidden;
 }
 
+.register-card-link {
+  display: block;
+  color: var(--ink);
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+}
+
+.register-card-link:hover {
+  text-decoration: none;
+  transform: translateY(-2px);
+  border-color: rgba(13, 91, 99, 0.24);
+  box-shadow: 0 18px 34px rgba(15, 29, 36, 0.08);
+}
+
 .register-card summary {
   list-style: none;
 }
