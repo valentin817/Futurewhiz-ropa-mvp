@@ -28,34 +28,24 @@
         <dd><span class="role-badge <%= activity.futurewhiz_role %>"><%= futurewhizRoleLabel(activity.futurewhiz_role) %></span></dd>
       </div>
       <div>
-        <dt>Controller</dt>
-        <dd>
-          <% if (activity.futurewhiz_role === 'processor') { %>
-            <%= activity.controller_name || 'Not documented' %> <span class="muted"><%= activity.controller_contact_details || '' %></span>
-          <% } else { %>
-            <%= controllerProfile.company_name || 'Not set' %> <span class="muted"><%= controllerProfileContactDetails(controllerProfile) || '' %></span>
-          <% } %>
-        </dd>
-      </div>
-      <div>
         <dt>Joint controller</dt>
-        <dd><%= activity.joint_controller_name || 'Not applicable' %> <span class="muted"><%= activity.joint_controller_contact_details %></span></dd>
+        <dd><%= activity.joint_controller_name || 'Not applicable' %></dd>
       </div>
       <div>
         <dt>Controller representative</dt>
-        <dd><%= activity.controller_representative_name || 'Not applicable' %> <span class="muted"><%= activity.controller_representative_contact_details %></span></dd>
+        <dd><%= activity.controller_representative_name || 'Not applicable' %></dd>
       </div>
       <div>
         <dt>Data Protection Officer</dt>
-        <dd><%= activity.dpo_name || 'Not applicable' %> <span class="muted"><%= activity.dpo_contact_details %></span></dd>
+        <dd><%= activity.dpo_name || 'Not applicable' %></dd>
       </div>
       <div>
         <dt>Business owner</dt>
-        <dd><%= activity.business_owner_name %> <span class="muted"><%= activity.business_owner_email %></span></dd>
+        <dd><%= activity.business_owner_name || 'Not set' %></dd>
       </div>
       <div>
         <dt>Legal reviewer</dt>
-        <dd><%= activity.legal_reviewer_name || 'Not assigned' %> <span class="muted"><%= activity.legal_reviewer_email %></span></dd>
+        <dd><%= activity.legal_reviewer_name || 'Not assigned' %></dd>
       </div>
       <div>
         <dt>Last updated by</dt>
@@ -77,31 +67,6 @@
         </dd>
       </div>
     </dl>
-  </article>
-
-  <article class="panel">
-    <div class="section-heading">
-      <div>
-        <h2>Identification of the controller</h2>
-      </div>
-      <a class="button ghost" href="/controller-identification">Open page</a>
-    </div>
-
-    <% if (activity.futurewhiz_role === 'controller') { %>
-      <dl class="detail-list">
-        <div><dt>Company name</dt><dd><%= controllerProfile.company_name || 'Not set' %></dd></div>
-        <div><dt>Contact</dt><dd><%= controllerProfile.contact_name || 'Not set' %></dd></div>
-        <div><dt>Address</dt><dd><%= controllerProfile.address || 'Not set' %></dd></div>
-        <div><dt>Phone number</dt><dd><%= controllerProfile.phone_number || 'Not set' %></dd></div>
-        <div><dt>Email</dt><dd><%= controllerProfile.email || 'Not set' %></dd></div>
-        <div><dt>Chamber of commerce</dt><dd><%= controllerProfile.chamber_of_commerce || 'Not set' %></dd></div>
-      </dl>
-    <% } else { %>
-      <dl class="detail-list">
-        <div><dt>Controller name</dt><dd><%= activity.controller_name || 'Not documented' %></dd></div>
-        <div><dt>Controller contact</dt><dd><%= activity.controller_contact_details || 'Not documented' %></dd></div>
-      </dl>
-    <% } %>
   </article>
 
   <article class="panel security-panel" id="security-measures">
@@ -192,35 +157,6 @@
 </section>
 
 <section class="detail-grid">
-  <% if (canChangeStatus) { %>
-    <article class="panel">
-      <h2>Review and approval workflow</h2>
-      <form class="stack" method="post" action="/activities/<%= activity.id %>/status">
-        <label>
-          <span>Workflow status</span>
-          <select name="status">
-            <% statusOptions.forEach((option) => { %>
-              <option value="<%= option.value %>" <%= option.value === activity.status ? 'selected' : '' %>><%= option.label %></option>
-            <% }) %>
-          </select>
-        </label>
-        <label>
-          <span>Review date when approving</span>
-          <input type="date" name="last_review_date" value="<%= activity.last_review_date %>" />
-        </label>
-        <label>
-          <span>Workflow notes</span>
-          <textarea name="workflow_notes" rows="4"><%= activity.workflow_notes %></textarea>
-        </label>
-        <label>
-          <span>Reason for change</span>
-          <input type="text" name="change_reason" placeholder="Why is the status changing?" />
-        </label>
-        <button class="button" type="submit">Update workflow</button>
-      </form>
-    </article>
-  <% } %>
-
   <article class="panel">
     <h2>Supporting files</h2>
     <% if (canEdit) { %>
@@ -256,31 +192,6 @@
             <div class="muted"><%= attachment.attachment_type %> · uploaded <%= formatDateTime(attachment.uploaded_at) %></div>
           </div>
           <a class="button ghost" href="/attachments/<%= attachment.id %>/download">Download</a>
-        </div>
-      <% }) %>
-    </div>
-  </article>
-</section>
-
-<section class="detail-grid">
-  <article class="panel">
-    <h2>Audit trail / change log</h2>
-    <div class="timeline-list">
-      <% changes.forEach((change) => { %>
-        <div class="timeline-item">
-          <div class="timeline-title"><%= change.field_name || change.event_type %></div>
-          <div class="muted"><%= change.actor_name || change.actor_email %> · <%= formatDateTime(change.created_at) %></div>
-          <p>
-            <% if (change.old_value || change.new_value) { %>
-              <strong>From:</strong> <%= change.old_value || 'Empty' %><br />
-              <strong>To:</strong> <%= change.new_value || 'Empty' %>
-            <% } else { %>
-              <%= change.event_type %>
-            <% } %>
-          </p>
-          <% if (change.reason) { %>
-            <div class="muted">Reason: <%= change.reason %></div>
-          <% } %>
         </div>
       <% }) %>
     </div>

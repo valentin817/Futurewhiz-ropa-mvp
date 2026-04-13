@@ -216,21 +216,6 @@
         </select>
       </label>
 
-      <div class="controller-preview-card" data-controller-preview>
-        <div class="controller-preview-header">
-          <strong>Identification of the controller</strong>
-          <a class="inline-link" href="/controller-identification">Open global page</a>
-        </div>
-        <dl class="mini-detail-list">
-          <div><dt>Company</dt><dd><%= controllerProfile.company_name || 'Not set' %></dd></div>
-          <div><dt>Contact</dt><dd><%= controllerProfile.contact_name || 'Not set' %></dd></div>
-          <div><dt>Address</dt><dd><%= controllerProfile.address || 'Not set' %></dd></div>
-          <div><dt>Phone</dt><dd><%= controllerProfile.phone_number || 'Not set' %></dd></div>
-          <div><dt>Email</dt><dd><%= controllerProfile.email || 'Not set' %></dd></div>
-          <div><dt>Chamber of Commerce</dt><dd><%= controllerProfile.chamber_of_commerce || 'Not set' %></dd></div>
-        </dl>
-      </div>
-
       <label class="processor-only">
         <span>Controller name *</span>
         <input type="text" name="controller_name" value="<%= formValues.controller_name %>" />

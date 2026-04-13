@@ -726,27 +726,23 @@ function buildVerticalFieldSheetPdf(rows, { title, subtitleLines = [] } = {}) {
   });
 }
 
-export function buildActivityDetailPdf(activity, { title, subtitleLines = [], controllerProfile } = {}) {
+const DETAIL_PDF_EXCLUDED_FIELDS = new Set([
+  'controller_name',
+  'controller_contact_details',
+  'joint_controller_contact_details',
+  'controller_representative_contact_details',
+  'dpo_contact_details',
+  'business_owner_email',
+  'legal_reviewer_email',
+  'workflow_notes'
+]);
+
+export function buildActivityDetailPdf(activity, { title, subtitleLines = [] } = {}) {
   const rows = [
-    { label: 'Controller identification', value: activityControllerContactValue(activity, controllerProfile) },
-    ...ACTIVITY_FIELD_META.map((field) => ({
+    ...ACTIVITY_FIELD_META.filter((field) => !DETAIL_PDF_EXCLUDED_FIELDS.has(field.key)).map((field) => ({
       label: field.label,
       value: displayValue(field, activity[field.key])
     }))
-  ];
-
-  return buildVerticalFieldSheetPdf(rows, { title, subtitleLines });
-}
-
-export function buildCompanyDetailsPdf(controllerProfile, { title = 'Company details', subtitleLines = [] } = {}) {
-  const rows = [
-    { label: 'Company name', value: controllerProfile?.company_name || 'Not set' },
-    { label: 'Contact', value: controllerProfile?.contact_name || 'Not set' },
-    { label: 'Address', value: controllerProfile?.address || 'Not set' },
-    { label: 'Phone number', value: controllerProfile?.phone_number || 'Not set' },
-    { label: 'E-mail', value: controllerProfile?.email || 'Not set' },
-    { label: 'Chamber of commerce', value: controllerProfile?.chamber_of_commerce || 'Not set' },
-    { label: 'Last updated', value: controllerProfile?.updated_at || controllerProfile?.created_at || 'Not set' }
   ];
 
   return buildVerticalFieldSheetPdf(rows, { title, subtitleLines });
@@ -762,7 +758,7 @@ export function buildSecurityDetailPdf(activity, { title, subtitleLines = [] } =
     { label: 'Security measures', value: activity.security_measures || 'Missing security measures' },
     { label: 'Status', value: activity.status || 'Not set' },
     { label: 'Next review date', value: activity.next_review_date || 'Not set' },
-    { label: 'Business owner', value: activity.business_owner_name || activity.business_owner_email || 'Not set' },
+    { label: 'Business owner', value: activity.business_owner_name || 'Not set' },
     { label: 'Security review reference', value: activity.security_review_ref || 'Missing' }
   ];
 
@@ -777,7 +773,7 @@ export function buildSecurityRegisterPdf(activities) {
     { label: 'Security measures', pdfWidth: 180, value: (activity) => activity.security_measures || 'Missing security measures' },
     { label: 'Status', pdfWidth: 72, value: (activity) => activity.status || 'Not set' },
     { label: 'Next review', pdfWidth: 78, value: (activity) => activity.next_review_date || 'Not set' },
-    { label: 'Owner', pdfWidth: 78, value: (activity) => activity.business_owner_name || activity.business_owner_email || 'Not set' }
+    { label: 'Owner', pdfWidth: 78, value: (activity) => activity.business_owner_name || 'Not set' }
   ];
   const pageWidth = 760;
   const pageHeight = 595;

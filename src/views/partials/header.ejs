@@ -16,7 +16,6 @@
       <% if (user) { %>
         <a class="<%= currentPath.startsWith('/activities') ? 'active' : '' %>" href="/activities">RoPA register</a>
         <a class="<%= currentPath === '/security-measures' ? 'active' : '' %>" href="/security-measures">Security measures</a>
-        <a class="<%= currentPath === '/controller-identification' ? 'active' : '' %>" href="/controller-identification">Company details</a>
         <% if (user.role === 'admin') { %>
           <a class="<%= currentPath === '/admin' ? 'active' : '' %>" href="/admin">Admin</a>
         <% } %>

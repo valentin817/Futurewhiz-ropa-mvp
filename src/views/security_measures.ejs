@@ -135,7 +135,7 @@
             <div class="security-card-meta">
               <span><%= activity.department || 'Not set' %></span>
               <span><%= activity.product_service || 'Not set' %></span>
-              <span><%= activity.business_owner_name || activity.business_owner_email || 'Not set' %></span>
+              <span><%= activity.business_owner_name || 'Not set' %></span>
               <span class="<%= activity.is_overdue ? 'review-date overdue' : 'review-date' %>"><%= activity.next_review_date ? formatDate(activity.next_review_date) : 'Not set' %></span>
             </div>
             <div class="security-card-text"><%= activity.security_measures || 'Missing security measures' %></div>

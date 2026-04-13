@@ -22,7 +22,6 @@ import {
   boolFromInput,
   buildActivityCsv,
   buildActivityDetailPdf,
-  buildCompanyDetailsPdf,
   buildActivityExcelXml,
   buildRegisterPdf,
   buildSecurityDetailPdf,
@@ -876,7 +875,6 @@ async function updateActivity(id, payload) {
 async function renderActivityForm(req, res, options = {}) {
   const vocab = await getVocabBundle();
   const users = await getActiveUsers();
-  const controllerProfile = await getControllerProfile();
   const legalReviewers = users.filter((user) => user.role === 'legal' || user.role === 'admin');
   const businessOwners = users.filter((user) => user.role === 'business' || user.role === 'admin');
   const activity = options.activity || null;
@@ -949,7 +947,6 @@ async function renderActivityForm(req, res, options = {}) {
     statusOptions: STATUS_OPTIONS,
     reviewIntervals: REVIEW_INTERVAL_OPTIONS,
     futurewhizRoleOptions: FUTUREWHIZ_ROLE_OPTIONS,
-    controllerProfile,
     legalReviewers,
     businessOwners,
     vocab,
@@ -1017,101 +1014,13 @@ app.post('/logout', (req, res) => {
   });
 });
 
-app.get(
-  '/controller-identification',
-  ensureAuth,
-  asyncHandler(async (req, res) => {
-    const controllerProfile = await getControllerProfile();
-    res.render('controller_identification', {
-      pageTitle: 'Identification of the controller',
-      controllerProfile,
-      errors: [],
-      canEditControllerProfile: req.session.user.role === 'legal' || req.session.user.role === 'admin'
-    });
-  })
-);
+app.all('/controller-identification', ensureAuth, (_req, res) => {
+  return res.redirect('/activities');
+});
 
-app.post(
-  '/controller-identification',
-  ensureLegal,
-  asyncHandler(async (req, res) => {
-    const existingProfile = await getControllerProfile();
-    const controllerProfile = {
-      id: existingProfile?.id,
-      company_name: String(req.body.company_name || '').trim(),
-      contact_name: String(req.body.contact_name || '').trim(),
-      address: String(req.body.address || '').trim(),
-      phone_number: String(req.body.phone_number || '').trim(),
-      email: String(req.body.email || '').trim(),
-      chamber_of_commerce: String(req.body.chamber_of_commerce || '').trim()
-    };
-
-    const errors = [];
-    if (!controllerProfile.company_name) errors.push('Company name is required.');
-    if (!controllerProfile.contact_name) errors.push('Contact is required.');
-    if (!controllerProfile.email) errors.push('Email is required.');
-
-    if (errors.length > 0) {
-      return res.status(422).render('controller_identification', {
-        pageTitle: 'Identification of the controller',
-        controllerProfile,
-        errors,
-        canEditControllerProfile: true
-      });
-    }
-
-    await db
-      .prepare(
-        `
-          UPDATE controller_profile
-          SET company_name = ?, contact_name = ?, address = ?, phone_number = ?, email = ?, chamber_of_commerce = ?, updated_at = ?
-          WHERE id = ?
-        `
-      )
-      .run(
-        controllerProfile.company_name,
-        controllerProfile.contact_name,
-        controllerProfile.address,
-        controllerProfile.phone_number,
-        controllerProfile.email,
-        controllerProfile.chamber_of_commerce,
-        nowIso(),
-        controllerProfile.id
-      );
-
-    await db
-      .prepare(
-        `
-          UPDATE activities
-          SET controller_name = ?, controller_contact_details = ?
-          WHERE futurewhiz_role = 'controller'
-        `
-      )
-      .run(controllerProfile.company_name, controllerProfileContactDetails(controllerProfile));
-
-    setFlash(req, 'success', 'Controller identification updated.');
-    return res.redirect('/controller-identification');
-  })
-);
-
-app.get(
-  '/controller-identification/export.pdf',
-  ensureAuth,
-  asyncHandler(async (req, res) => {
-    const controllerProfile = await getControllerProfile();
-    const pdf = buildCompanyDetailsPdf(controllerProfile, {
-      title: 'Company details',
-      subtitleLines: [
-        `Company: ${controllerProfile?.company_name || 'Not set'}`,
-        `Exported: ${formatDateTime(nowIso(), APP_TIMEZONE)}`
-      ]
-    });
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename="futurewhiz-company-details.pdf"');
-    return res.send(pdf);
-  })
-);
+app.get('/controller-identification/export.pdf', ensureAuth, (_req, res) => {
+  return res.redirect('/activities');
+});
 
 app.get(
   '/activities',
@@ -1119,17 +1028,15 @@ app.get(
   asyncHandler(async (req, res) => {
     const filters = buildActivityFilters(req.query);
     const { whereSql, params, orderBy } = buildActivityWhere(filters);
-    const [rows, supportData, vocab, controllerProfile] = await Promise.all([
+    const [rows, supportData, vocab] = await Promise.all([
       db.prepare(`SELECT * FROM activities WHERE ${whereSql} ORDER BY ${orderBy}`).all(params),
       fetchFiltersSupportData(),
-      getVocabBundle(),
-      getControllerProfile()
+      getVocabBundle()
     ]);
 
     res.render('activities', {
       pageTitle: 'RoPA register',
       activities: rows.map(decorateActivity),
-      controllerProfile,
       activeFilters: summarizeActivityFilters(filters),
       filters,
       exportQuery: new URLSearchParams(filters).toString(),
@@ -1218,21 +1125,15 @@ app.get(
       return res.status(404).render('error', { message: 'Activity not found.' });
     }
 
-    const [changes, attachments] = await Promise.all([
-      db.prepare('SELECT * FROM activity_change_log WHERE activity_id = ? ORDER BY created_at DESC LIMIT 50').all(activity.id),
-      db.prepare('SELECT * FROM activity_attachments WHERE activity_id = ? ORDER BY uploaded_at DESC').all(activity.id)
-    ]);
-    const controllerProfile = await getControllerProfile();
+    const attachments = await db
+      .prepare('SELECT * FROM activity_attachments WHERE activity_id = ? ORDER BY uploaded_at DESC')
+      .all(activity.id);
 
     res.render('activity_detail', {
       pageTitle: `${activity.reference_code} · ${activity.activity_name}`,
       activity,
-      controllerProfile,
-      changes,
       attachments,
-      statusOptions: STATUS_OPTIONS,
-      canEdit: canEditActivity(req.session.user, activity),
-      canChangeStatus: req.session.user.role === 'legal' || req.session.user.role === 'admin'
+      canEdit: canEditActivity(req.session.user, activity)
     });
   })
 );
@@ -1446,15 +1347,13 @@ app.get(
       return res.status(404).render('error', { message: 'Activity not found.' });
     }
 
-    const controllerProfile = await getControllerProfile();
     const pdf = buildActivityDetailPdf(activity, {
       title: `${activity.reference_code} · ${activity.activity_name}`,
       subtitleLines: [
         `Status: ${statusLabel(activity.status)}`,
-        `Business owner: ${activity.business_owner_name || activity.business_owner_email || 'Not set'}`,
+        `Business owner: ${activity.business_owner_name || 'Not set'}`,
         `Last updated: ${activity.last_updated_at ? formatDateTime(activity.last_updated_at, APP_TIMEZONE) : 'Not set'}`
-      ],
-      controllerProfile
+      ]
     });
 
     res.setHeader('Content-Type', 'application/pdf');
