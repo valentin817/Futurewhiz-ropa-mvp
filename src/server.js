@@ -22,6 +22,7 @@ import {
   boolFromInput,
   buildActivityCsv,
   buildActivityDetailPdf,
+  buildCompanyDetailsPdf,
   buildActivityExcelXml,
   buildRegisterPdf,
   buildSecurityDetailPdf,
@@ -1014,13 +1015,101 @@ app.post('/logout', (req, res) => {
   });
 });
 
-app.all('/controller-identification', ensureAuth, (_req, res) => {
-  return res.redirect('/activities');
-});
+app.get(
+  '/controller-identification',
+  ensureAuth,
+  asyncHandler(async (req, res) => {
+    const controllerProfile = await getControllerProfile();
+    res.render('controller_identification', {
+      pageTitle: 'Company details',
+      controllerProfile,
+      errors: [],
+      canEditControllerProfile: req.session.user.role === 'legal' || req.session.user.role === 'admin'
+    });
+  })
+);
 
-app.get('/controller-identification/export.pdf', ensureAuth, (_req, res) => {
-  return res.redirect('/activities');
-});
+app.post(
+  '/controller-identification',
+  ensureLegal,
+  asyncHandler(async (req, res) => {
+    const existingProfile = await getControllerProfile();
+    const controllerProfile = {
+      id: existingProfile?.id,
+      company_name: String(req.body.company_name || '').trim(),
+      contact_name: String(req.body.contact_name || '').trim(),
+      address: String(req.body.address || '').trim(),
+      phone_number: String(req.body.phone_number || '').trim(),
+      email: String(req.body.email || '').trim(),
+      chamber_of_commerce: String(req.body.chamber_of_commerce || '').trim()
+    };
+
+    const errors = [];
+    if (!controllerProfile.company_name) errors.push('Company name is required.');
+    if (!controllerProfile.contact_name) errors.push('Contact is required.');
+    if (!controllerProfile.email) errors.push('Email is required.');
+
+    if (errors.length > 0) {
+      return res.status(422).render('controller_identification', {
+        pageTitle: 'Company details',
+        controllerProfile,
+        errors,
+        canEditControllerProfile: true
+      });
+    }
+
+    await db
+      .prepare(
+        `
+          UPDATE controller_profile
+          SET company_name = ?, contact_name = ?, address = ?, phone_number = ?, email = ?, chamber_of_commerce = ?, updated_at = ?
+          WHERE id = ?
+        `
+      )
+      .run(
+        controllerProfile.company_name,
+        controllerProfile.contact_name,
+        controllerProfile.address,
+        controllerProfile.phone_number,
+        controllerProfile.email,
+        controllerProfile.chamber_of_commerce,
+        nowIso(),
+        controllerProfile.id
+      );
+
+    await db
+      .prepare(
+        `
+          UPDATE activities
+          SET controller_name = ?, controller_contact_details = ?
+          WHERE futurewhiz_role = 'controller'
+        `
+      )
+      .run(controllerProfile.company_name, controllerProfileContactDetails(controllerProfile));
+
+    setFlash(req, 'success', 'Company details updated.');
+    return res.redirect('/controller-identification');
+  })
+);
+
+app.get(
+  '/controller-identification/export.pdf',
+  ensureAuth,
+  asyncHandler(async (req, res) => {
+    const controllerProfile = await getControllerProfile();
+    const pdf = buildCompanyDetailsPdf(controllerProfile, {
+      title: 'Company details',
+      subtitleLines: [
+        `Company: ${controllerProfile?.company_name || 'Not set'}`,
+        `Exported: ${formatDateTime(nowIso(), APP_TIMEZONE)}`
+      ]
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="futurewhiz-company-details.pdf"');
+    return res.send(pdf);
+  })
+);
 
 app.get(
   '/activities',

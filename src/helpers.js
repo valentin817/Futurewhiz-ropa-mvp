@@ -748,6 +748,20 @@ export function buildActivityDetailPdf(activity, { title, subtitleLines = [] } =
   return buildVerticalFieldSheetPdf(rows, { title, subtitleLines });
 }
 
+export function buildCompanyDetailsPdf(controllerProfile, { title = 'Company details', subtitleLines = [] } = {}) {
+  const rows = [
+    { label: 'Company name', value: controllerProfile?.company_name || 'Not set' },
+    { label: 'Contact', value: controllerProfile?.contact_name || 'Not set' },
+    { label: 'Address', value: controllerProfile?.address || 'Not set' },
+    { label: 'Phone number', value: controllerProfile?.phone_number || 'Not set' },
+    { label: 'E-mail', value: controllerProfile?.email || 'Not set' },
+    { label: 'Chamber of commerce', value: controllerProfile?.chamber_of_commerce || 'Not set' },
+    { label: 'Last updated', value: controllerProfile?.updated_at || controllerProfile?.created_at || 'Not set' }
+  ];
+
+  return buildVerticalFieldSheetPdf(rows, { title, subtitleLines });
+}
+
 export function buildSecurityDetailPdf(activity, { title, subtitleLines = [] } = {}) {
   const rows = [
     { label: 'Activity', value: activity.activity_name || 'Not set' },
