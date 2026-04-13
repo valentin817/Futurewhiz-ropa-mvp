@@ -403,6 +403,10 @@ th {
   text-align: right;
 }
 
+.search-panel {
+  margin-bottom: 22px;
+}
+
 .role-tab-strip {
   display: flex;
   flex-wrap: wrap;
@@ -495,6 +499,75 @@ th {
   flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 18px;
+}
+
+.register-card-list {
+  display: grid;
+  gap: 18px;
+}
+
+.register-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.register-card summary {
+  list-style: none;
+}
+
+.register-card summary::-webkit-details-marker {
+  display: none;
+}
+
+.register-card-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(220px, 0.9fr) auto;
+  gap: 18px;
+  align-items: start;
+  padding: 22px 24px;
+  cursor: pointer;
+}
+
+.register-card-primary,
+.register-card-meta,
+.register-card-status,
+.register-card-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.register-card-primary strong {
+  font-size: 1.08rem;
+}
+
+.register-card-meta {
+  color: var(--muted);
+}
+
+.register-card-status {
+  justify-items: end;
+}
+
+.register-card-body {
+  padding: 0 24px 24px;
+  border-top: 1px solid rgba(216, 207, 191, 0.7);
+}
+
+.compact-grid {
+  margin-top: 20px;
+}
+
+.inset-panel {
+  box-shadow: none;
+  border-radius: 20px;
+  background: rgba(250, 248, 243, 0.9);
+}
+
+.register-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
 }
 
 .filter-chip {
@@ -972,6 +1045,14 @@ th {
 
   .saved-view-grid {
     grid-template-columns: 1fr;
+  }
+
+  .register-card-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .register-card-status {
+    justify-items: start;
   }
 
   .sheet-label {

@@ -9,15 +9,13 @@
 <body>
   <header class="site-header">
     <div class="brand-block">
-      <a class="brand-mark" href="<%= user ? '/dashboard' : '/login' %>">FW</a>
+      <a class="brand-mark" href="<%= user ? '/activities' : '/login' %>">FW</a>
     </div>
 
     <nav class="site-nav">
       <% if (user) { %>
-        <a class="<%= currentPath === '/dashboard' ? 'active' : '' %>" href="/dashboard">Dashboard</a>
         <a class="<%= currentPath.startsWith('/activities') ? 'active' : '' %>" href="/activities">RoPA register</a>
         <a class="<%= currentPath === '/controller-identification' ? 'active' : '' %>" href="/controller-identification">Company details</a>
-        <a href="/activities/new">New activity</a>
         <% if (user.role === 'admin') { %>
           <a class="<%= currentPath === '/admin' ? 'active' : '' %>" href="/admin">Admin</a>
         <% } %>

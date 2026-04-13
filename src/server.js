@@ -958,7 +958,7 @@ app.get(
   '/',
   asyncHandler(async (req, res) => {
     if (req.session.user) {
-      return res.redirect('/dashboard');
+      return res.redirect('/activities');
     }
     return res.redirect('/login');
   })
@@ -1004,7 +1004,7 @@ app.post(
       department: user.department
     };
     setFlash(req, 'success', `Signed in as ${user.name}.`);
-    return res.redirect('/dashboard');
+    return res.redirect('/activities');
   })
 );
 
@@ -1018,65 +1018,7 @@ app.get(
   '/dashboard',
   ensureAuth,
   asyncHandler(async (req, res) => {
-    const metrics = await Promise.all([
-      db.prepare('SELECT COUNT(*) AS count FROM activities').get(),
-      db
-        .prepare(`SELECT COUNT(*) AS count FROM activities WHERE status != 'archived' AND next_review_date != '' AND date(next_review_date) < date(?)`)
-        .get(todayIsoDate()),
-      db.prepare('SELECT COUNT(*) AS count FROM activities WHERE children_data = 1').get(),
-      db.prepare('SELECT COUNT(*) AS count FROM activities WHERE special_category_data = 1').get(),
-      db.prepare('SELECT COUNT(*) AS count FROM activities WHERE international_transfers = 1').get(),
-      db.prepare('SELECT COUNT(*) AS count FROM activities WHERE ai_involvement = 1').get(),
-      db.prepare(`SELECT COUNT(*) AS count FROM activities WHERE retention_period IS NULL OR retention_period = ''`).get(),
-      db.prepare(`SELECT COUNT(*) AS count FROM activities WHERE security_measures IS NULL OR security_measures = ''`).get(),
-      db
-        .prepare(
-          `SELECT COUNT(*) AS count FROM activities WHERE (vendor_review_ref IS NULL OR vendor_review_ref = '') OR (dpia_ref IS NULL OR dpia_ref = '')`
-        )
-        .get(),
-      db.prepare(`SELECT COUNT(*) AS count FROM activities WHERE status = 'pending_legal_review'`).get(),
-      db
-        .prepare(
-          `
-            SELECT * FROM activities
-            WHERE status != 'archived'
-            ORDER BY CASE WHEN next_review_date = '' OR next_review_date IS NULL THEN 1 ELSE 0 END, next_review_date ASC
-            LIMIT 8
-          `
-        )
-        .all()
-    ]);
-
-    const [
-      total,
-      overdue,
-      children,
-      specialCategory,
-      transfers,
-      ai,
-      missingRetention,
-      missingSecurity,
-      missingLinks,
-      pendingLegal,
-      upcomingReviews
-    ] = metrics;
-
-    res.render('dashboard', {
-      pageTitle: 'RoPA dashboard',
-      summaryCards: [
-        { label: 'Total RoPA records', value: total.count, href: '/activities' },
-        { label: 'Overdue for review', value: overdue.count, href: '/activities?overdue_review=yes' },
-        { label: 'Children’s data', value: children.count, href: '/activities?children_data=yes' },
-        { label: 'Special category data', value: specialCategory.count, href: '/activities?special_category_data=yes' },
-        { label: 'Third-country transfers', value: transfers.count, href: '/activities?international_transfers=yes' },
-        { label: 'AI systems involved', value: ai.count, href: '/activities?ai_involvement=yes' },
-        { label: 'Missing retention periods', value: missingRetention.count, href: '/activities?retention_state=missing' },
-        { label: 'Missing security measures', value: missingSecurity.count, href: '/activities?missing_security_measures=yes' },
-        { label: 'Missing vendor review or DPIA', value: missingLinks.count, href: '/activities?missing_links=missing_any_core_link' },
-        { label: 'Pending legal review', value: pendingLegal.count, href: '/activities?status=pending_legal_review' }
-      ],
-      upcomingReviews: upcomingReviews.map(decorateActivity)
-    });
+    return res.redirect('/activities');
   })
 );
 
