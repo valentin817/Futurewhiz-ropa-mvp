@@ -18,13 +18,11 @@ import {
   STATUS_OPTIONS
 } from './constants.js';
 import {
-  activityPdfLines,
   addMonths,
   boolFromInput,
   buildActivityCsv,
   buildActivityExcelXml,
   buildRegisterPdf,
-  buildSimplePdf,
   displayValue,
   escapeHtml,
   futurewhizRoleLabel,
@@ -1463,16 +1461,17 @@ app.get(
       return res.status(404).render('error', { message: 'Activity not found.' });
     }
 
-    const [attachments, changes] = await Promise.all([
-      db.prepare('SELECT * FROM activity_attachments WHERE activity_id = ? ORDER BY uploaded_at DESC').all(activity.id),
-      db.prepare('SELECT * FROM activity_change_log WHERE activity_id = ? ORDER BY created_at DESC LIMIT 10').all(activity.id)
-    ]);
     const controllerProfile = await getControllerProfile();
-
-    const pdf = buildSimplePdf(
-      `${activity.reference_code} - ${activity.activity_name}`,
-      activityPdfLines(activity, attachments, changes, controllerProfile)
-    );
+    const pdf = buildRegisterPdf([activity], {
+      title: `${activity.reference_code} · Single processing activity export`,
+      subtitleLines: [
+        `Activity: ${activity.activity_name}`,
+        `Status: ${statusLabel(activity.status)}`,
+        `Business owner: ${activity.business_owner_name || activity.business_owner_email || 'Not set'}`,
+        `Last updated: ${activity.last_updated_at ? formatDateTime(activity.last_updated_at, APP_TIMEZONE) : 'Not set'}`
+      ],
+      controllerProfile
+    });
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${activity.reference_code}.pdf"`);
