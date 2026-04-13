@@ -41,8 +41,13 @@
         <input type="text" name="activity_name" value="<%= formValues.activity_name %>" required />
       </label>
 
+      <label>
+        <span>Business process</span>
+        <input type="text" name="business_process" value="<%= formValues.business_process %>" />
+      </label>
+
       <label class="span-2">
-        <span>Short description *</span>
+        <span>What? *</span>
         <textarea name="short_description" rows="3" required><%= formValues.short_description %></textarea>
       </label>
 
@@ -87,7 +92,12 @@
       </label>
 
       <label class="span-2">
-        <span>Purpose of processing *</span>
+        <span>Used for what within FutureWhiz?</span>
+        <textarea name="futurewhiz_internal_use" rows="3"><%= formValues.futurewhiz_internal_use %></textarea>
+      </label>
+
+      <label class="span-2">
+        <span>Purpose of processing? Why do we use this? *</span>
         <textarea name="purpose_of_processing" rows="4" required><%= formValues.purpose_of_processing %></textarea>
       </label>
 
@@ -102,6 +112,11 @@
       </label>
 
       <label>
+        <span>Type of processing</span>
+        <input type="text" name="processing_type" value="<%= formValues.processing_type %>" />
+      </label>
+
+      <label>
         <span>Status <%= canSetStatus ? '*' : '' %></span>
         <select name="status" <%= canSetStatus ? 'required' : 'disabled' %>>
           <% statusOptions.forEach((statusOption) => { %>
@@ -113,6 +128,17 @@
           <div class="field-help">Business users can propose edits, but legal/privacy controls workflow status.</div>
         <% } %>
       </label>
+
+      <div class="toggle-grid span-2">
+        <label class="checkbox-card">
+          <input type="checkbox" name="processes_personal_data" value="1" <%= Number(formValues.processes_personal_data) ? 'checked' : '' %> />
+          <span>Processes personal data?</span>
+        </label>
+        <label class="checkbox-card">
+          <input type="checkbox" name="processing_lawful" value="1" <%= Number(formValues.processing_lawful) ? 'checked' : '' %> />
+          <span>Processing lawful?</span>
+        </label>
+      </div>
     </div>
   </section>
 
@@ -126,7 +152,7 @@
 
     <div class="form-grid">
       <label>
-        <span>Categories of data subjects</span>
+        <span>Category of data subject? (i.e. children, parents, schools, future / former customers,..)</span>
         <select name="data_subject_categories" multiple size="7">
           <% vocab.dataSubjects.forEach((item) => { %>
             <option value="<%= item.label %>" <%= formValues.data_subject_categories.includes(item.label) ? 'selected' : '' %>><%= item.label %></option>
@@ -135,7 +161,7 @@
       </label>
 
       <label>
-        <span>Categories of personal data</span>
+        <span>What personal data is processed?</span>
         <select name="personal_data_categories" multiple size="7">
           <% vocab.personalData.forEach((item) => { %>
             <option value="<%= item.label %>" <%= formValues.personal_data_categories.includes(item.label) ? 'selected' : '' %>><%= item.label %></option>
@@ -144,7 +170,7 @@
       </label>
 
       <label>
-        <span>Categories of recipients</span>
+        <span>Category of recipients to whom personal data will be disclosed (i.e. regulatory bodies, other third parties,...)</span>
         <select name="recipient_categories" multiple size="7">
           <% vocab.recipients.forEach((item) => { %>
             <option value="<%= item.label %>" <%= formValues.recipient_categories.includes(item.label) ? 'selected' : '' %>><%= item.label %></option>
@@ -179,6 +205,18 @@
         <label class="checkbox-card">
           <input type="checkbox" name="international_transfers" value="1" <%= Number(formValues.international_transfers) ? 'checked' : '' %> />
           <span>International transfers</span>
+        </label>
+        <label class="checkbox-card">
+          <input type="checkbox" name="data_within_eu" value="1" <%= Number(formValues.data_within_eu) ? 'checked' : '' %> />
+          <span>Data within EU?</span>
+        </label>
+        <label class="checkbox-card">
+          <input type="checkbox" name="processor_agreement_signed" value="1" <%= Number(formValues.processor_agreement_signed) ? 'checked' : '' %> />
+          <span>Signed the 'new' Processor agreement which is compliant to the GDPR?</span>
+        </label>
+        <label class="checkbox-card">
+          <input type="checkbox" name="tia_performed" value="1" <%= Number(formValues.tia_performed) ? 'checked' : '' %> />
+          <span>TIA performed?</span>
         </label>
       </div>
 
@@ -349,8 +387,23 @@
 
     <div class="form-grid">
       <label>
-        <span>Retention period</span>
+        <span>Storage term + term when data should be deleted</span>
         <textarea name="retention_period" rows="3"><%= formValues.retention_period %></textarea>
+      </label>
+
+      <label>
+        <span>Storage term internally used</span>
+        <textarea name="retention_period_internal" rows="3"><%= formValues.retention_period_internal %></textarea>
+      </label>
+
+      <label class="span-2">
+        <span>How is enforcement of the internal storage term currently carried out?</span>
+        <textarea name="retention_enforcement" rows="3"><%= formValues.retention_enforcement %></textarea>
+      </label>
+
+      <label class="span-2">
+        <span>Is 'old' data deleted (Y/N)? If Y, when (date).</span>
+        <textarea name="old_data_deletion_details" rows="3"><%= formValues.old_data_deletion_details %></textarea>
       </label>
 
       <label>
@@ -375,6 +428,16 @@
       <label class="span-2">
         <span>Workflow notes</span>
         <textarea name="workflow_notes" rows="3"><%= formValues.workflow_notes %></textarea>
+      </label>
+
+      <label class="span-2">
+        <span>Legal remarks</span>
+        <textarea name="legal_remarks" rows="3"><%= formValues.legal_remarks %></textarea>
+      </label>
+
+      <label class="span-2">
+        <span>Action required?</span>
+        <textarea name="action_required" rows="3"><%= formValues.action_required %></textarea>
       </label>
 
       <label class="span-2">

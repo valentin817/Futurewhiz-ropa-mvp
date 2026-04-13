@@ -290,10 +290,10 @@ function buildActivityWhere(filters) {
 
   if (filters.q) {
     clauses.push(
-      `(reference_code LIKE ? OR activity_name LIKE ? OR short_description LIKE ? OR purpose_of_processing LIKE ? OR processors_vendors_json LIKE ? OR security_measures LIKE ?)`
+      `(reference_code LIKE ? OR activity_name LIKE ? OR business_process LIKE ? OR short_description LIKE ? OR futurewhiz_internal_use LIKE ? OR purpose_of_processing LIKE ? OR processors_vendors_json LIKE ? OR security_measures LIKE ? OR legal_remarks LIKE ? OR action_required LIKE ?)`
     );
     const searchTerm = `%${filters.q}%`;
-    params.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+    params.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
   }
 
   if (filters.futurewhiz_role) {
@@ -460,7 +460,12 @@ function decorateActivity(activity) {
     missing_vendor_review: !String(activity.vendor_review_ref || '').trim(),
     missing_dpia: !String(activity.dpia_ref || '').trim(),
     missing_security_review: !String(activity.security_review_ref || '').trim(),
-    missing_retention_period: !String(activity.retention_period || '').trim()
+    missing_retention_period: !String(activity.retention_period || '').trim(),
+    processes_personal_data: Number(activity.processes_personal_data),
+    processing_lawful: Number(activity.processing_lawful),
+    data_within_eu: Number(activity.data_within_eu),
+    processor_agreement_signed: Number(activity.processor_agreement_signed),
+    tia_performed: Number(activity.tia_performed)
   };
 }
 
@@ -633,7 +638,18 @@ async function buildActivityPayload(body, actor, existingActivity = null, mode =
   return {
     reference_code: existingActivity?.reference_code || (await createActivityReference()),
     activity_name: String(body.activity_name || existingActivity?.activity_name || '').trim(),
+    business_process: String(body.business_process || existingActivity?.business_process || '').trim(),
     short_description: String(body.short_description || existingActivity?.short_description || '').trim(),
+    processes_personal_data:
+      body.processes_personal_data === undefined
+        ? Number(existingActivity?.processes_personal_data ?? 1)
+        : boolFromInput(body.processes_personal_data),
+    futurewhiz_internal_use: String(body.futurewhiz_internal_use || existingActivity?.futurewhiz_internal_use || '').trim(),
+    processing_lawful:
+      body.processing_lawful === undefined
+        ? Number(existingActivity?.processing_lawful ?? (body.lawful_basis || existingActivity?.lawful_basis ? 1 : 0))
+        : boolFromInput(body.processing_lawful),
+    processing_type: String(body.processing_type || existingActivity?.processing_type || '').trim(),
     business_owner_id: owner.id,
     business_owner_name: owner.name,
     business_owner_email: owner.email,
@@ -667,11 +683,28 @@ async function buildActivityPayload(body, actor, existingActivity = null, mode =
     transfer_mechanisms_json: stringifyJsonArray(body.transfer_mechanisms ?? []),
     transfer_countries_json: stringifyJsonArray(body.transfer_countries ?? ''),
     retention_period: String(body.retention_period || existingActivity?.retention_period || '').trim(),
+    retention_period_internal: String(body.retention_period_internal || existingActivity?.retention_period_internal || '').trim(),
+    retention_enforcement: String(body.retention_enforcement || existingActivity?.retention_enforcement || '').trim(),
+    old_data_deletion_details: String(body.old_data_deletion_details || existingActivity?.old_data_deletion_details || '').trim(),
+    data_within_eu:
+      body.data_within_eu === undefined
+        ? Number(existingActivity?.data_within_eu ?? (body.international_transfers || existingActivity?.international_transfers ? 0 : 1))
+        : boolFromInput(body.data_within_eu),
+    processor_agreement_signed:
+      body.processor_agreement_signed === undefined
+        ? Number(existingActivity?.processor_agreement_signed ?? 0)
+        : boolFromInput(body.processor_agreement_signed),
     source_of_personal_data: String(body.source_of_personal_data || existingActivity?.source_of_personal_data || '').trim(),
     children_data: boolFromInput(body.children_data),
     special_category_data: boolFromInput(body.special_category_data),
     ai_involvement: boolFromInput(body.ai_involvement),
     security_measures: String(body.security_measures || existingActivity?.security_measures || '').trim(),
+    legal_remarks: String(body.legal_remarks || existingActivity?.legal_remarks || '').trim(),
+    action_required: String(body.action_required || existingActivity?.action_required || '').trim(),
+    tia_performed:
+      body.tia_performed === undefined
+        ? Number(existingActivity?.tia_performed ?? 0)
+        : boolFromInput(body.tia_performed),
     vendor_review_ref: String(body.vendor_review_ref || existingActivity?.vendor_review_ref || '').trim(),
     vendor_review_url: String(body.vendor_review_url || existingActivity?.vendor_review_url || '').trim(),
     dpia_ref: String(body.dpia_ref || existingActivity?.dpia_ref || '').trim(),
@@ -708,18 +741,20 @@ async function insertActivity(payload) {
       `
         INSERT INTO activities (
           reference_code, activity_name, short_description, business_owner_id, business_owner_name, business_owner_email,
+          business_process, processes_personal_data, futurewhiz_internal_use, processing_lawful, processing_type,
           futurewhiz_role, controller_name, controller_contact_details, joint_controller_name, joint_controller_contact_details,
           controller_representative_name, controller_representative_contact_details, dpo_name, dpo_contact_details,
           legal_reviewer_id, legal_reviewer_name, legal_reviewer_email, department, product_service, purpose_of_processing,
           data_subject_categories_json, personal_data_categories_json, lawful_basis, recipient_categories_json,
           processors_vendors_json, international_transfers, transfer_mechanisms_json, transfer_countries_json,
-          retention_period, source_of_personal_data, children_data, special_category_data, ai_involvement,
-          security_measures, vendor_review_ref, vendor_review_url, dpia_ref, dpia_url, lia_ref, lia_url,
+          retention_period, retention_period_internal, retention_enforcement, old_data_deletion_details, data_within_eu,
+          processor_agreement_signed, source_of_personal_data, children_data, special_category_data, ai_involvement,
+          security_measures, legal_remarks, action_required, tia_performed, vendor_review_ref, vendor_review_url, dpia_ref, dpia_url, lia_ref, lia_url,
           privacy_notice_ref, privacy_notice_url, security_review_ref, security_review_url, ai_tool_review_ref,
           ai_tool_review_url, status, workflow_notes, review_interval_months, last_updated_by_id, last_updated_by_name,
           last_updated_by_email, last_updated_at, last_review_date, next_review_date, comments_notes,
           created_by_id, created_by_name, created_by_email, created_at, archived_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `
     )
     .run(
@@ -729,6 +764,11 @@ async function insertActivity(payload) {
       payload.business_owner_id,
       payload.business_owner_name,
       payload.business_owner_email,
+      payload.business_process,
+      payload.processes_personal_data,
+      payload.futurewhiz_internal_use,
+      payload.processing_lawful,
+      payload.processing_type,
       payload.futurewhiz_role,
       payload.controller_name,
       payload.controller_contact_details,
@@ -753,11 +793,19 @@ async function insertActivity(payload) {
       payload.transfer_mechanisms_json,
       payload.transfer_countries_json,
       payload.retention_period,
+      payload.retention_period_internal,
+      payload.retention_enforcement,
+      payload.old_data_deletion_details,
+      payload.data_within_eu,
+      payload.processor_agreement_signed,
       payload.source_of_personal_data,
       payload.children_data,
       payload.special_category_data,
       payload.ai_involvement,
       payload.security_measures,
+      payload.legal_remarks,
+      payload.action_required,
+      payload.tia_performed,
       payload.vendor_review_ref,
       payload.vendor_review_url,
       payload.dpia_ref,
@@ -795,14 +843,14 @@ async function updateActivity(id, payload) {
     .prepare(
       `
         UPDATE activities SET
-          activity_name = ?, short_description = ?, business_owner_id = ?, business_owner_name = ?, business_owner_email = ?,
+          activity_name = ?, business_process = ?, short_description = ?, processes_personal_data = ?, futurewhiz_internal_use = ?, processing_lawful = ?, processing_type = ?, business_owner_id = ?, business_owner_name = ?, business_owner_email = ?,
           futurewhiz_role = ?, controller_name = ?, controller_contact_details = ?, joint_controller_name = ?, joint_controller_contact_details = ?,
           controller_representative_name = ?, controller_representative_contact_details = ?, dpo_name = ?, dpo_contact_details = ?,
           legal_reviewer_id = ?, legal_reviewer_name = ?, legal_reviewer_email = ?, department = ?, product_service = ?,
           purpose_of_processing = ?, data_subject_categories_json = ?, personal_data_categories_json = ?, lawful_basis = ?,
           recipient_categories_json = ?, processors_vendors_json = ?, international_transfers = ?, transfer_mechanisms_json = ?,
-          transfer_countries_json = ?, retention_period = ?, source_of_personal_data = ?, children_data = ?,
-          special_category_data = ?, ai_involvement = ?, security_measures = ?, vendor_review_ref = ?, vendor_review_url = ?,
+          transfer_countries_json = ?, retention_period = ?, retention_period_internal = ?, retention_enforcement = ?, old_data_deletion_details = ?, data_within_eu = ?, processor_agreement_signed = ?, source_of_personal_data = ?, children_data = ?,
+          special_category_data = ?, ai_involvement = ?, security_measures = ?, legal_remarks = ?, action_required = ?, tia_performed = ?, vendor_review_ref = ?, vendor_review_url = ?,
           dpia_ref = ?, dpia_url = ?, lia_ref = ?, lia_url = ?, privacy_notice_ref = ?, privacy_notice_url = ?,
           security_review_ref = ?, security_review_url = ?, ai_tool_review_ref = ?, ai_tool_review_url = ?, status = ?,
           workflow_notes = ?, review_interval_months = ?, last_updated_by_id = ?, last_updated_by_name = ?,
@@ -813,7 +861,12 @@ async function updateActivity(id, payload) {
     )
     .run(
       payload.activity_name,
+      payload.business_process,
       payload.short_description,
+      payload.processes_personal_data,
+      payload.futurewhiz_internal_use,
+      payload.processing_lawful,
+      payload.processing_type,
       payload.business_owner_id,
       payload.business_owner_name,
       payload.business_owner_email,
@@ -841,11 +894,19 @@ async function updateActivity(id, payload) {
       payload.transfer_mechanisms_json,
       payload.transfer_countries_json,
       payload.retention_period,
+      payload.retention_period_internal,
+      payload.retention_enforcement,
+      payload.old_data_deletion_details,
+      payload.data_within_eu,
+      payload.processor_agreement_signed,
       payload.source_of_personal_data,
       payload.children_data,
       payload.special_category_data,
       payload.ai_involvement,
       payload.security_measures,
+      payload.legal_remarks,
+      payload.action_required,
+      payload.tia_performed,
       payload.vendor_review_ref,
       payload.vendor_review_url,
       payload.dpia_ref,
@@ -891,7 +952,12 @@ async function renderActivityForm(req, res, options = {}) {
       }
       : {
         activity_name: '',
+        business_process: '',
         short_description: '',
+        processes_personal_data: 1,
+        futurewhiz_internal_use: '',
+        processing_lawful: 1,
+        processing_type: '',
         business_owner_email: req.session.user.email,
         futurewhiz_role: 'controller',
         controller_name: '',
@@ -915,11 +981,19 @@ async function renderActivityForm(req, res, options = {}) {
         transfer_mechanisms: [],
         transfer_countries: '',
         retention_period: '',
+        retention_period_internal: '',
+        retention_enforcement: '',
+        old_data_deletion_details: '',
+        data_within_eu: 1,
+        processor_agreement_signed: 0,
         source_of_personal_data: '',
         children_data: 0,
         special_category_data: 0,
         ai_involvement: 0,
         security_measures: '',
+        legal_remarks: '',
+        action_required: '',
+        tia_performed: 0,
         vendor_review_ref: '',
         vendor_review_url: '',
         dpia_ref: '',

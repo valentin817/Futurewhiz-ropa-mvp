@@ -437,6 +437,11 @@ async function seedActivities(database) {
       controller_contact_details: 'School onboarding contact on file'
     }
   ].map((activity) => ({
+    business_process: '',
+    processes_personal_data: 1,
+    futurewhiz_internal_use: '',
+    processing_lawful: 1,
+    processing_type: '',
     controller_name: CONTROLLER_PROFILE_DEFAULTS.company_name,
     controller_contact_details: CONTROLLER_PROFILE_DEFAULTS.email,
     joint_controller_name: '',
@@ -446,6 +451,14 @@ async function seedActivities(database) {
     dpo_name: '',
     dpo_contact_details: '',
     futurewhiz_role: 'controller',
+    retention_period_internal: '',
+    retention_enforcement: '',
+    old_data_deletion_details: '',
+    data_within_eu: 1,
+    processor_agreement_signed: 0,
+    legal_remarks: '',
+    action_required: '',
+    tia_performed: 0,
     ...activity
   }));
 
@@ -461,18 +474,20 @@ async function seedActivities(database) {
     `
       INSERT INTO activities (
         reference_code, activity_name, short_description, business_owner_id, business_owner_name, business_owner_email,
+        business_process, processes_personal_data, futurewhiz_internal_use, processing_lawful, processing_type,
         controller_name, controller_contact_details, joint_controller_name, joint_controller_contact_details,
         controller_representative_name, controller_representative_contact_details, dpo_name, dpo_contact_details,
         legal_reviewer_id, legal_reviewer_name, legal_reviewer_email, department, product_service, purpose_of_processing,
         data_subject_categories_json, personal_data_categories_json, lawful_basis, recipient_categories_json,
         processors_vendors_json, international_transfers, transfer_mechanisms_json, transfer_countries_json,
-        retention_period, source_of_personal_data, children_data, special_category_data, ai_involvement, futurewhiz_role,
-        security_measures, vendor_review_ref, vendor_review_url, dpia_ref, dpia_url, lia_ref, lia_url,
+        retention_period, retention_period_internal, retention_enforcement, old_data_deletion_details, data_within_eu,
+        processor_agreement_signed, source_of_personal_data, children_data, special_category_data, ai_involvement, futurewhiz_role,
+        security_measures, legal_remarks, action_required, tia_performed, vendor_review_ref, vendor_review_url, dpia_ref, dpia_url, lia_ref, lia_url,
         privacy_notice_ref, privacy_notice_url, security_review_ref, security_review_url, ai_tool_review_ref,
         ai_tool_review_url, status, workflow_notes, review_interval_months, last_updated_by_id, last_updated_by_name,
         last_updated_by_email, last_updated_at, last_review_date, next_review_date, comments_notes, created_by_id,
         created_by_name, created_by_email, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
   );
 
@@ -504,6 +519,11 @@ async function seedActivities(database) {
       owner?.id || null,
       owner?.name || '',
       owner?.email || activity.business_owner_email,
+      activity.business_process,
+      activity.processes_personal_data,
+      activity.futurewhiz_internal_use,
+      activity.processing_lawful,
+      activity.processing_type,
       activity.controller_name,
       activity.controller_contact_details,
       activity.joint_controller_name,
@@ -527,12 +547,20 @@ async function seedActivities(database) {
       stringifyJsonArray(activity.transfer_mechanisms),
       stringifyJsonArray(activity.transfer_countries),
       activity.retention_period,
+      activity.retention_period_internal,
+      activity.retention_enforcement,
+      activity.old_data_deletion_details,
+      activity.data_within_eu,
+      activity.processor_agreement_signed,
       activity.source_of_personal_data,
       activity.children_data,
       activity.special_category_data,
       activity.ai_involvement,
       activity.futurewhiz_role,
       activity.security_measures,
+      activity.legal_remarks,
+      activity.action_required,
+      activity.tia_performed,
       activity.vendor_review_ref,
       activity.vendor_review_url,
       activity.dpia_ref,
@@ -636,7 +664,20 @@ async function ensureActivityColumns(database) {
     ['controller_representative_contact_details', `TEXT NOT NULL DEFAULT ''`],
     ['dpo_name', `TEXT NOT NULL DEFAULT '${CONTROLLER_PROFILE_DEFAULTS.contact_name.replaceAll("'", "''")}'`],
     ['dpo_contact_details', `TEXT NOT NULL DEFAULT '${CONTROLLER_PROFILE_DEFAULTS.email.replaceAll("'", "''")}'`],
-    ['futurewhiz_role', `TEXT NOT NULL DEFAULT 'controller'`]
+    ['futurewhiz_role', `TEXT NOT NULL DEFAULT 'controller'`],
+    ['business_process', `TEXT NOT NULL DEFAULT ''`],
+    ['processes_personal_data', `INTEGER NOT NULL DEFAULT 1`],
+    ['futurewhiz_internal_use', `TEXT NOT NULL DEFAULT ''`],
+    ['processing_lawful', `INTEGER NOT NULL DEFAULT 1`],
+    ['processing_type', `TEXT NOT NULL DEFAULT ''`],
+    ['retention_period_internal', `TEXT NOT NULL DEFAULT ''`],
+    ['retention_enforcement', `TEXT NOT NULL DEFAULT ''`],
+    ['old_data_deletion_details', `TEXT NOT NULL DEFAULT ''`],
+    ['data_within_eu', `INTEGER NOT NULL DEFAULT 1`],
+    ['processor_agreement_signed', `INTEGER NOT NULL DEFAULT 0`],
+    ['legal_remarks', `TEXT NOT NULL DEFAULT ''`],
+    ['action_required', `TEXT NOT NULL DEFAULT ''`],
+    ['tia_performed', `INTEGER NOT NULL DEFAULT 0`]
   ];
 
   for (const [name, definition] of additions) {
@@ -654,7 +695,20 @@ async function ensureActivityColumns(database) {
         controller_contact_details = COALESCE(NULLIF(controller_contact_details, ''), ?),
         dpo_name = COALESCE(NULLIF(dpo_name, ''), ?),
         dpo_contact_details = COALESCE(NULLIF(dpo_contact_details, ''), ?),
-        futurewhiz_role = COALESCE(NULLIF(futurewhiz_role, ''), 'controller')
+        futurewhiz_role = COALESCE(NULLIF(futurewhiz_role, ''), 'controller'),
+        business_process = COALESCE(NULLIF(business_process, ''), activity_name),
+        processes_personal_data = COALESCE(processes_personal_data, 1),
+        futurewhiz_internal_use = COALESCE(NULLIF(futurewhiz_internal_use, ''), purpose_of_processing),
+        processing_lawful = COALESCE(processing_lawful, CASE WHEN lawful_basis IS NOT NULL AND lawful_basis != '' THEN 1 ELSE 0 END),
+        processing_type = COALESCE(processing_type, ''),
+        retention_period_internal = COALESCE(NULLIF(retention_period_internal, ''), COALESCE(retention_period, '')),
+        retention_enforcement = COALESCE(retention_enforcement, ''),
+        old_data_deletion_details = COALESCE(old_data_deletion_details, ''),
+        data_within_eu = COALESCE(data_within_eu, CASE WHEN international_transfers = 1 THEN 0 ELSE 1 END),
+        processor_agreement_signed = COALESCE(processor_agreement_signed, CASE WHEN vendor_review_ref IS NOT NULL AND vendor_review_ref != '' THEN 1 ELSE 0 END),
+        legal_remarks = COALESCE(legal_remarks, ''),
+        action_required = COALESCE(action_required, ''),
+        tia_performed = COALESCE(tia_performed, CASE WHEN international_transfers = 1 THEN 1 ELSE 0 END)
     `
   ).run(
     CONTROLLER_PROFILE_DEFAULTS.company_name,
@@ -718,6 +772,11 @@ export async function initDb() {
         business_owner_id INTEGER,
         business_owner_name TEXT,
         business_owner_email TEXT NOT NULL,
+        business_process TEXT NOT NULL DEFAULT '',
+        processes_personal_data INTEGER NOT NULL DEFAULT 1,
+        futurewhiz_internal_use TEXT NOT NULL DEFAULT '',
+        processing_lawful INTEGER NOT NULL DEFAULT 1,
+        processing_type TEXT NOT NULL DEFAULT '',
         controller_name TEXT NOT NULL DEFAULT 'Futurewhiz B.V.',
         controller_contact_details TEXT NOT NULL DEFAULT 'privacy@futurewhiz.com',
         joint_controller_name TEXT NOT NULL DEFAULT '',
@@ -741,12 +800,20 @@ export async function initDb() {
         transfer_mechanisms_json TEXT NOT NULL DEFAULT '[]',
         transfer_countries_json TEXT NOT NULL DEFAULT '[]',
         retention_period TEXT,
+        retention_period_internal TEXT NOT NULL DEFAULT '',
+        retention_enforcement TEXT NOT NULL DEFAULT '',
+        old_data_deletion_details TEXT NOT NULL DEFAULT '',
+        data_within_eu INTEGER NOT NULL DEFAULT 1,
+        processor_agreement_signed INTEGER NOT NULL DEFAULT 0,
         source_of_personal_data TEXT,
         children_data INTEGER NOT NULL DEFAULT 0,
         special_category_data INTEGER NOT NULL DEFAULT 0,
         ai_involvement INTEGER NOT NULL DEFAULT 0,
         futurewhiz_role TEXT NOT NULL DEFAULT 'controller',
         security_measures TEXT NOT NULL DEFAULT '',
+        legal_remarks TEXT NOT NULL DEFAULT '',
+        action_required TEXT NOT NULL DEFAULT '',
+        tia_performed INTEGER NOT NULL DEFAULT 0,
         vendor_review_ref TEXT,
         vendor_review_url TEXT,
         dpia_ref TEXT,

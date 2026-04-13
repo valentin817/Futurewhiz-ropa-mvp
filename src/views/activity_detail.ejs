@@ -88,22 +88,37 @@
   <article class="panel">
     <h2>Processing details</h2>
     <dl class="detail-list">
+      <div><dt>Business process</dt><dd><%= activity.business_process || 'Not set' %></dd></div>
       <div><dt>Department</dt><dd><%= activity.department %></dd></div>
+      <div><dt>Owner</dt><dd><%= activity.business_owner_name || 'Not set' %></dd></div>
+      <div><dt>What?</dt><dd><%= activity.short_description || 'Not set' %></dd></div>
+      <div><dt>Processes personal data?</dt><dd><%= activity.processes_personal_data ? 'Yes' : 'No' %></dd></div>
       <div><dt>Product / service</dt><dd><%= activity.product_service %></dd></div>
-      <div><dt>Purpose of processing</dt><dd><%= activity.purpose_of_processing %></dd></div>
+      <div><dt>Used for what within FutureWhiz?</dt><dd><%= activity.futurewhiz_internal_use || 'Not set' %></dd></div>
+      <div><dt>Purpose of processing? Why do we use this?</dt><dd><%= activity.purpose_of_processing %></dd></div>
+      <div><dt>Processing lawful?</dt><dd><%= activity.processing_lawful ? 'Yes' : 'No' %></dd></div>
+      <div><dt>Type of processing</dt><dd><%= activity.processing_type || 'Not set' %></dd></div>
       <div><dt>Lawful basis</dt><dd><%= activity.lawful_basis || 'Not set' %></dd></div>
-      <div><dt>Data subjects</dt><dd><%= activity.data_subject_categories.length ? activity.data_subject_categories.join(', ') : 'Not set' %></dd></div>
-      <div><dt>Personal data</dt><dd><%= activity.personal_data_categories.length ? activity.personal_data_categories.join(', ') : 'Not set' %></dd></div>
-      <div><dt>Recipients</dt><dd><%= activity.recipient_categories.length ? activity.recipient_categories.join(', ') : 'Not set' %></dd></div>
+      <div><dt>Category of data subject? (i.e. children, parents, schools, future / former customers,..)</dt><dd><%= activity.data_subject_categories.length ? activity.data_subject_categories.join(', ') : 'Not set' %></dd></div>
+      <div><dt>What personal data is processed?</dt><dd><%= activity.personal_data_categories.length ? activity.personal_data_categories.join(', ') : 'Not set' %></dd></div>
+      <div><dt>Category of recipients to whom personal data will be disclosed (i.e. regulatory bodies, other third parties,...)</dt><dd><%= activity.recipient_categories.length ? activity.recipient_categories.join(', ') : 'Not set' %></dd></div>
       <div><dt>Processors / vendors</dt><dd><%= activity.processors_vendors.length ? activity.processors_vendors.join(', ') : 'Not set' %></dd></div>
       <div><dt>International transfers</dt><dd><%= activity.international_transfers ? 'Yes' : 'No' %></dd></div>
+      <div><dt>Data within EU?</dt><dd><%= activity.data_within_eu ? 'Yes' : 'No' %></dd></div>
       <div><dt>Transfer safeguards</dt><dd><%= activity.transfer_mechanisms.length ? activity.transfer_mechanisms.join(', ') : 'Not set' %></dd></div>
       <div><dt>Transfer countries</dt><dd><%= activity.transfer_countries.length ? activity.transfer_countries.join(', ') : 'Not set' %></dd></div>
-      <div><dt>Retention period</dt><dd><%= activity.retention_period || 'Missing retention period' %></dd></div>
+      <div><dt>Storage term + term when data should be deleted</dt><dd><%= activity.retention_period || 'Missing retention period' %></dd></div>
+      <div><dt>Storage term internally used</dt><dd><%= activity.retention_period_internal || 'Not set' %></dd></div>
+      <div><dt>How is enforcement of the internal storage term currently carried out?</dt><dd><%= activity.retention_enforcement || 'Not set' %></dd></div>
+      <div><dt>Is 'old' data deleted (Y/N)? If Y, when (date).</dt><dd><%= activity.old_data_deletion_details || 'Not set' %></dd></div>
+      <div><dt>Signed the 'new' Processor agreement which is compliant to the GDPR?</dt><dd><%= activity.processor_agreement_signed ? 'Yes' : 'No' %></dd></div>
+      <div><dt>TIA performed?</dt><dd><%= activity.tia_performed ? 'Yes' : 'No' %></dd></div>
       <div><dt>Source of personal data</dt><dd><%= activity.source_of_personal_data || 'Not set' %></dd></div>
       <div><dt>Children’s data</dt><dd><%= activity.children_data ? 'Yes' : 'No' %></dd></div>
       <div><dt>Special category data</dt><dd><%= activity.special_category_data ? 'Yes' : 'No' %></dd></div>
       <div><dt>AI systems involved</dt><dd><%= activity.ai_involvement ? 'Yes' : 'No' %></dd></div>
+      <div><dt>Legal remarks</dt><dd><%= activity.legal_remarks || 'Not set' %></dd></div>
+      <div><dt>Action required?</dt><dd><%= activity.action_required || 'Not set' %></dd></div>
     </dl>
   </article>
 
