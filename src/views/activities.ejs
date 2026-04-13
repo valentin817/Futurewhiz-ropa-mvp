@@ -177,12 +177,62 @@
   </form>
 </section>
 
-<section class="quick-links">
-  <a class="quick-link" href="/activities?overdue_review=yes">Overdue reviews</a>
-  <a class="quick-link" href="/activities?status=pending_legal_review">Pending legal review</a>
-  <a class="quick-link" href="/activities?ai_involvement=yes">AI-related activities</a>
-  <a class="quick-link" href="/activities?missing_links=missing_dpia">Missing DPIA</a>
-  <a class="quick-link" href="/activities?missing_links=missing_vendor_review">Missing vendor review</a>
+<%
+  const savedViews = [
+    {
+      href: '/activities?overdue_review=yes',
+      title: 'Overdue reviews',
+      hint: 'Records that need attention now',
+      badge: 'Review',
+      active: filters.overdue_review === 'yes'
+    },
+    {
+      href: '/activities?status=pending_legal_review',
+      title: 'Pending legal review',
+      hint: 'Items waiting on legal/privacy sign-off',
+      badge: 'Workflow',
+      active: filters.status === 'pending_legal_review'
+    },
+    {
+      href: '/activities?ai_involvement=yes',
+      title: 'AI-related activities',
+      hint: 'Processing that involves AI systems',
+      badge: 'AI',
+      active: filters.ai_involvement === 'yes'
+    },
+    {
+      href: '/activities?missing_links=missing_dpia',
+      title: 'Missing DPIA',
+      hint: 'Records without a linked DPIA',
+      badge: 'Gap',
+      active: filters.missing_links === 'missing_dpia'
+    },
+    {
+      href: '/activities?missing_links=missing_vendor_review',
+      title: 'Missing vendor review',
+      hint: 'Records without vendor review or DPA linkage',
+      badge: 'Vendor',
+      active: filters.missing_links === 'missing_vendor_review'
+    }
+  ];
+%>
+
+<section class="saved-view-strip">
+  <div class="saved-view-copy">
+    <span class="saved-view-eyebrow">Saved views</span>
+    <h2>Quick compliance lenses</h2>
+    <p>Jump into the most common legal/privacy follow-up queues without rebuilding filters each time.</p>
+  </div>
+
+  <div class="saved-view-grid">
+    <% savedViews.forEach((view) => { %>
+      <a class="saved-view-card <%= view.active ? 'active' : '' %>" href="<%= view.href %>">
+        <span class="saved-view-badge"><%= view.badge %></span>
+        <strong><%= view.title %></strong>
+        <span class="saved-view-hint"><%= view.hint %></span>
+      </a>
+    <% }) %>
+  </div>
 </section>
 
 <section class="panel">
