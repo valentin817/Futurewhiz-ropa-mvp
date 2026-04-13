@@ -12,8 +12,6 @@ import {
   ATTACHMENT_TYPE_OPTIONS,
   BOOLEAN_FILTERS,
   FUTUREWHIZ_ROLE_OPTIONS,
-  INTAKE_REQUEST_TYPE_OPTIONS,
-  INTAKE_TRIGGER_OPTIONS,
   REQUIRED_ACTIVITY_FIELDS,
   REVIEW_INTERVAL_OPTIONS,
   ROLE_OPTIONS,
@@ -439,11 +437,6 @@ function makeReference(prefix, id) {
 async function createActivityReference() {
   const row = await db.prepare('SELECT COALESCE(MAX(id), 0) + 1 AS next_id FROM activities').get();
   return makeReference('ROPA', row.next_id);
-}
-
-async function createIntakeReference() {
-  const row = await db.prepare('SELECT COALESCE(MAX(id), 0) + 1 AS next_id FROM intake_requests').get();
-  return makeReference('INTAKE', row.next_id);
 }
 
 function decorateActivity(activity) {
@@ -1052,15 +1045,6 @@ app.get(
             LIMIT 8
           `
         )
-        .all(),
-      db
-        .prepare(
-          `
-            SELECT * FROM intake_requests
-            ORDER BY created_at DESC
-            LIMIT 6
-          `
-        )
         .all()
     ]);
 
@@ -1075,8 +1059,7 @@ app.get(
       missingSecurity,
       missingLinks,
       pendingLegal,
-      upcomingReviews,
-      intakeRequests
+      upcomingReviews
     ] = metrics;
 
     res.render('dashboard', {
@@ -1093,8 +1076,7 @@ app.get(
         { label: 'Missing vendor review or DPIA', value: missingLinks.count, href: '/activities?missing_links=missing_any_core_link' },
         { label: 'Pending legal review', value: pendingLegal.count, href: '/activities?status=pending_legal_review' }
       ],
-      upcomingReviews: upcomingReviews.map(decorateActivity),
-      intakeRequests
+      upcomingReviews: upcomingReviews.map(decorateActivity)
     });
   })
 );
@@ -1253,12 +1235,9 @@ app.get(
       return res.status(404).render('error', { message: 'Activity not found.' });
     }
 
-    const [changes, attachments, relatedIntakes] = await Promise.all([
+    const [changes, attachments] = await Promise.all([
       db.prepare('SELECT * FROM activity_change_log WHERE activity_id = ? ORDER BY created_at DESC LIMIT 50').all(activity.id),
-      db.prepare('SELECT * FROM activity_attachments WHERE activity_id = ? ORDER BY uploaded_at DESC').all(activity.id),
-      db
-        .prepare('SELECT * FROM intake_requests WHERE linked_activity_id = ? OR outcome_activity_id = ? ORDER BY created_at DESC')
-        .all(activity.id, activity.id)
+      db.prepare('SELECT * FROM activity_attachments WHERE activity_id = ? ORDER BY uploaded_at DESC').all(activity.id)
     ]);
     const controllerProfile = await getControllerProfile();
 
@@ -1268,7 +1247,6 @@ app.get(
       controllerProfile,
       changes,
       attachments,
-      relatedIntakes,
       statusOptions: STATUS_OPTIONS,
       canEdit: canEditActivity(req.session.user, activity),
       canChangeStatus: req.session.user.role === 'legal' || req.session.user.role === 'admin'
@@ -1558,223 +1536,6 @@ app.get(
     res.setHeader('Content-Type', 'application/vnd.ms-excel');
     res.setHeader('Content-Disposition', 'attachment; filename="futurewhiz-ropa-register.xls"');
     return res.send(buildActivityExcelXml(activities, controllerProfile));
-  })
-);
-
-app.get(
-  '/intake',
-  ensureAuth,
-  asyncHandler(async (req, res) => {
-    const [activities, vocab] = await Promise.all([
-      db.prepare('SELECT id, reference_code, activity_name FROM activities ORDER BY activity_name ASC').all(),
-      getVocabBundle()
-    ]);
-    res.render('intake_form', {
-      pageTitle: 'New intake request',
-      activities,
-      intakeTriggerOptions: INTAKE_TRIGGER_OPTIONS,
-      intakeRequestTypeOptions: INTAKE_REQUEST_TYPE_OPTIONS,
-      vocab,
-      values: {
-        trigger_type: '',
-        request_type: 'new_activity',
-        title: '',
-        summary: '',
-        department: req.session.user.department || '',
-        product_service: '',
-        linked_activity_id: '',
-        material_change: 0
-      },
-      errors: []
-    });
-  })
-);
-
-app.post(
-  '/intake',
-  ensureAuth,
-  asyncHandler(async (req, res) => {
-    const values = {
-      trigger_type: String(req.body.trigger_type || '').trim(),
-      request_type: String(req.body.request_type || 'new_activity').trim(),
-      title: String(req.body.title || '').trim(),
-      summary: String(req.body.summary || '').trim(),
-      department: String(req.body.department || '').trim(),
-      product_service: String(req.body.product_service || '').trim(),
-      linked_activity_id: String(req.body.linked_activity_id || '').trim(),
-      material_change: boolFromInput(req.body.material_change)
-    };
-
-    const errors = [];
-    if (!values.trigger_type) errors.push('Trigger is required.');
-    if (!values.title) errors.push('Request title is required.');
-    if (!values.summary) errors.push('Summary is required.');
-    if (values.request_type === 'update_existing' && !values.linked_activity_id) {
-      errors.push('Select an existing activity to flag for update.');
-    }
-
-    if (errors.length > 0) {
-      const [activities, vocab] = await Promise.all([
-        db.prepare('SELECT id, reference_code, activity_name FROM activities ORDER BY activity_name ASC').all(),
-        getVocabBundle()
-      ]);
-      return res.status(422).render('intake_form', {
-        pageTitle: 'New intake request',
-        activities,
-        intakeTriggerOptions: INTAKE_TRIGGER_OPTIONS,
-        intakeRequestTypeOptions: INTAKE_REQUEST_TYPE_OPTIONS,
-        vocab,
-        values,
-        errors
-      });
-    }
-
-    let linkedActivity = null;
-    let outcomeActivityId = null;
-
-    if (values.request_type === 'update_existing') {
-      linkedActivity = await getActivityById(values.linked_activity_id);
-      if (!linkedActivity) {
-        setFlash(req, 'error', 'Linked activity was not found.');
-        return res.redirect('/intake');
-      }
-
-      const forcedNextReview =
-        !linkedActivity.next_review_date || linkedActivity.next_review_date > todayIsoDate()
-          ? todayIsoDate()
-          : linkedActivity.next_review_date;
-
-      await db
-        .prepare(
-          `
-            UPDATE activities
-            SET status = 'needs_update', next_review_date = ?, workflow_notes = ?, last_updated_by_id = ?, last_updated_by_name = ?,
-                last_updated_by_email = ?, last_updated_at = ?
-            WHERE id = ?
-          `
-        )
-        .run(
-          forcedNextReview,
-          `Flagged via intake trigger: ${values.trigger_type}. ${values.summary}`,
-          req.session.user.id,
-          req.session.user.name,
-          req.session.user.email,
-          nowIso(),
-          linkedActivity.id
-        );
-
-      await replaceReminder(linkedActivity.id, forcedNextReview, 'overdue', 'Material change requires review');
-      await writeChangeLog(
-        linkedActivity.id,
-        req.session.user,
-        'intake_linked',
-        'Intake trigger',
-        linkedActivity.status,
-        'Needs update',
-        values.summary
-      );
-      outcomeActivityId = linkedActivity.id;
-    } else {
-      const draftPayload = {
-        reference_code: await createActivityReference(),
-        activity_name: values.title,
-        short_description: values.summary,
-        business_owner_id: req.session.user.id,
-        business_owner_name: req.session.user.name,
-        business_owner_email: req.session.user.email,
-        legal_reviewer_id: null,
-        legal_reviewer_name: '',
-        legal_reviewer_email: '',
-        department: values.department,
-        product_service: values.product_service,
-        purpose_of_processing: values.summary,
-        data_subject_categories_json: '[]',
-        personal_data_categories_json: '[]',
-        lawful_basis: '',
-        recipient_categories_json: '[]',
-        processors_vendors_json: '[]',
-        international_transfers: 0,
-        transfer_mechanisms_json: '[]',
-        transfer_countries_json: '[]',
-        retention_period: '',
-        source_of_personal_data: '',
-        children_data: 0,
-        special_category_data: 0,
-        ai_involvement: values.trigger_type === 'new_ai_feature' ? 1 : 0,
-        security_measures: '',
-        vendor_review_ref: '',
-        vendor_review_url: '',
-        dpia_ref: '',
-        dpia_url: '',
-        lia_ref: '',
-        lia_url: '',
-        privacy_notice_ref: '',
-        privacy_notice_url: '',
-        security_review_ref: '',
-        security_review_url: '',
-        ai_tool_review_ref: '',
-        ai_tool_review_url: '',
-        status: 'pending_business_input',
-        workflow_notes: `Created from intake trigger: ${values.trigger_type}`,
-        review_interval_months: 12,
-        last_updated_by_id: req.session.user.id,
-        last_updated_by_name: req.session.user.name,
-        last_updated_by_email: req.session.user.email,
-        last_updated_at: nowIso(),
-        last_review_date: '',
-        next_review_date: addMonths(todayIsoDate(), 12),
-        comments_notes: '',
-        created_by_id: req.session.user.id,
-        created_by_name: req.session.user.name,
-        created_by_email: req.session.user.email,
-        created_at: nowIso(),
-        archived_at: null
-      };
-
-      outcomeActivityId = await insertActivity(draftPayload);
-      await writeChangeLog(
-        outcomeActivityId,
-        req.session.user,
-        'created',
-        'Record created from intake',
-        '',
-        draftPayload.reference_code,
-        values.summary
-      );
-      await replaceReminder(outcomeActivityId, draftPayload.next_review_date, 'scheduled', 'Initial review cadence');
-    }
-
-    const requestCode = await createIntakeReference();
-    await db
-      .prepare(
-        `
-          INSERT INTO intake_requests (
-            request_code, trigger_type, request_type, title, summary, requester_id, requester_name, requester_email,
-            department, product_service, linked_activity_id, linked_activity_reference, outcome_activity_id, status,
-            material_change, created_at, resolved_at, resolution_notes
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'submitted', ?, ?, '', '')
-        `
-      )
-      .run(
-        requestCode,
-        values.trigger_type,
-        values.request_type,
-        values.title,
-        values.summary,
-        req.session.user.id,
-        req.session.user.name,
-        req.session.user.email,
-        values.department,
-        values.product_service,
-        linkedActivity?.id || null,
-        linkedActivity?.reference_code || '',
-        outcomeActivityId,
-        values.material_change,
-        nowIso()
-      );
-
-    setFlash(req, 'success', 'Intake request submitted and routed into the RoPA workflow.');
-    return res.redirect(outcomeActivityId ? `/activities/${outcomeActivityId}` : '/dashboard');
   })
 );
 

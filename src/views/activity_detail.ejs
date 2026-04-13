@@ -263,22 +263,6 @@
 
 <section class="detail-grid">
   <article class="panel">
-    <h2>Related intake requests</h2>
-    <% if (relatedIntakes.length === 0) { %>
-      <p class="muted">No intake requests linked to this record yet.</p>
-    <% } %>
-    <div class="timeline-list">
-      <% relatedIntakes.forEach((request) => { %>
-        <div class="timeline-item">
-          <div class="timeline-title"><%= request.title %></div>
-          <div class="muted"><%= request.request_code %> · <%= request.trigger_type %> · <%= formatDateTime(request.created_at) %></div>
-          <p><%= request.summary %></p>
-        </div>
-      <% }) %>
-    </div>
-  </article>
-
-  <article class="panel">
     <h2>Audit trail / change log</h2>
     <div class="timeline-list">
       <% changes.forEach((change) => { %>
