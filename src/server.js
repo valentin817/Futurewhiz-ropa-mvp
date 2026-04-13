@@ -21,6 +21,7 @@ import {
   addMonths,
   boolFromInput,
   buildActivityCsv,
+  buildActivityDetailPdf,
   buildActivityExcelXml,
   buildRegisterPdf,
   displayValue,
@@ -1462,10 +1463,9 @@ app.get(
     }
 
     const controllerProfile = await getControllerProfile();
-    const pdf = buildRegisterPdf([activity], {
-      title: `${activity.reference_code} · Single processing activity export`,
+    const pdf = buildActivityDetailPdf(activity, {
+      title: `${activity.reference_code} · ${activity.activity_name}`,
       subtitleLines: [
-        `Activity: ${activity.activity_name}`,
         `Status: ${statusLabel(activity.status)}`,
         `Business owner: ${activity.business_owner_name || activity.business_owner_email || 'Not set'}`,
         `Last updated: ${activity.last_updated_at ? formatDateTime(activity.last_updated_at, APP_TIMEZONE) : 'Not set'}`

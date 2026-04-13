@@ -631,6 +631,108 @@ export function buildRegisterPdf(activities, { title = 'Futurewhiz RoPA register
   });
 }
 
+export function buildActivityDetailPdf(activity, { title, subtitleLines = [], controllerProfile } = {}) {
+  const pageWidth = 595;
+  const pageHeight = 842;
+  const marginX = 34;
+  const marginTop = 28;
+  const marginBottom = 30;
+  const tableWidth = pageWidth - marginX * 2;
+  const labelWidth = 168;
+  const valueWidth = tableWidth - labelWidth;
+  const rowPaddingX = 8;
+  const rowPaddingY = 6;
+  const labelFontSize = 8.2;
+  const valueFontSize = 8.8;
+  const lineHeight = 10;
+  const pageStreams = [];
+  const rows = [
+    { label: 'Controller identification', value: activityControllerContactValue(activity, controllerProfile) },
+    ...ACTIVITY_FIELD_META.map((field) => ({
+      label: field.label,
+      value: displayValue(field, activity[field.key])
+    }))
+  ];
+  const wrappedSubtitleLines = subtitleLines.flatMap((line) => wrapPdfText(line, 78));
+  let rowIndex = 0;
+  let pageIndex = 0;
+
+  while (rowIndex < rows.length) {
+    const commands = [];
+    const titleBandHeight = pageIndex === 0 ? 52 : 30;
+    const titleTop = pageHeight - marginTop;
+    commands.push('0.08 0.29 0.33 rg');
+    commands.push(`${marginX} ${titleTop - titleBandHeight} ${tableWidth} ${titleBandHeight} re f`);
+    commands.push(
+      pdfTextBlock(marginX + 10, titleTop - 18, [pageIndex === 0 ? title : `${title} (continued)`], 15, 16, { textColor: '1 g' })
+    );
+    if (pageIndex === 0 && wrappedSubtitleLines.length) {
+      commands.push(pdfTextBlock(marginX + 10, titleTop - 33, wrappedSubtitleLines, 8.2, 10, { textColor: '0.92 g' }));
+    }
+
+    let cursorY = titleTop - titleBandHeight - 10;
+
+    while (rowIndex < rows.length) {
+      const row = rows[rowIndex];
+      const labelLines = clampPdfLines(wrapPdfText(row.label, 28), 3, 28);
+      const valueLines = clampPdfLines(wrapPdfText(row.value || 'Not set', 60), 12, 60);
+      const rowHeight = Math.max(
+        24,
+        Math.max(labelLines.length * lineHeight, valueLines.length * lineHeight) + rowPaddingY * 2
+      );
+
+      if (cursorY - rowHeight < marginBottom) {
+        break;
+      }
+
+      if (rowIndex % 2 === 0) {
+        commands.push('0.98 0.97 0.95 rg');
+        commands.push(`${marginX} ${cursorY - rowHeight} ${tableWidth} ${rowHeight} re f`);
+      }
+
+      commands.push('0.77 0.77 0.74 RG');
+      commands.push('0.5 w');
+      commands.push(`${marginX} ${cursorY - rowHeight} ${tableWidth} ${rowHeight} re S`);
+      commands.push(`${marginX + labelWidth} ${cursorY - rowHeight} m ${marginX + labelWidth} ${cursorY} l S`);
+
+      commands.push('0.94 0.92 0.88 rg');
+      commands.push(`${marginX} ${cursorY - rowHeight} ${labelWidth} ${rowHeight} re f`);
+      commands.push('0.77 0.77 0.74 RG');
+      commands.push(`${marginX} ${cursorY - rowHeight} ${tableWidth} ${rowHeight} re S`);
+      commands.push(`${marginX + labelWidth} ${cursorY - rowHeight} m ${marginX + labelWidth} ${cursorY} l S`);
+
+      commands.push(
+        pdfTextBlock(marginX + rowPaddingX, cursorY - rowPaddingY - labelFontSize, labelLines, labelFontSize, lineHeight, {
+          textColor: '0.2 g'
+        })
+      );
+      commands.push(
+        pdfTextBlock(
+          marginX + labelWidth + rowPaddingX,
+          cursorY - rowPaddingY - valueFontSize,
+          valueLines,
+          valueFontSize,
+          lineHeight,
+          { textColor: '0.08 g' }
+        )
+      );
+
+      cursorY -= rowHeight;
+      rowIndex += 1;
+    }
+
+    pageStreams.push(commands.filter(Boolean).join('\n'));
+    pageIndex += 1;
+  }
+
+  return buildPdfDocument(pageStreams, {
+    pageWidth,
+    pageHeight,
+    footerBuilder: (index, count) =>
+      `0.25 g\nBT /F1 8 Tf ${marginX} 16 Td (${pdfEscape(`Page ${index + 1} of ${count}`)}) Tj ET`
+  });
+}
+
 export function activityPdfLines(activity, attachments = [], changes = [], controllerProfile = null) {
   const lines = [];
 
