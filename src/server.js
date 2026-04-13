@@ -25,6 +25,8 @@ import {
   buildCompanyDetailsPdf,
   buildActivityExcelXml,
   buildRegisterPdf,
+  buildSecurityDetailPdf,
+  buildSecurityRegisterPdf,
   displayValue,
   escapeHtml,
   futurewhizRoleLabel,
@@ -1142,6 +1144,34 @@ app.get(
   })
 );
 
+app.get(
+  '/security-measures',
+  ensureAuth,
+  asyncHandler(async (req, res) => {
+    const filters = buildActivityFilters(req.query);
+    const { whereSql, params, orderBy } = buildActivityWhere(filters);
+    const [rows, supportData, vocab] = await Promise.all([
+      db.prepare(`SELECT * FROM activities WHERE ${whereSql} ORDER BY ${orderBy}`).all(params),
+      fetchFiltersSupportData(),
+      getVocabBundle()
+    ]);
+
+    res.render('security_measures', {
+      pageTitle: 'Security measures',
+      activities: rows.map(decorateActivity),
+      activeFilters: summarizeActivityFilters(filters),
+      filters,
+      exportQuery: new URLSearchParams(filters).toString(),
+      filterOptions: {
+        ...supportData,
+        departments: vocab.departments.map((item) => item.label)
+      },
+      booleanFilters: BOOLEAN_FILTERS,
+      resultCount: rows.length
+    });
+  })
+);
+
 app.get('/activities/new', ensureAuth, asyncHandler(async (req, res) => renderActivityForm(req, res)));
 
 app.post(
@@ -1429,6 +1459,47 @@ app.get(
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${activity.reference_code}.pdf"`);
+    return res.send(pdf);
+  })
+);
+
+app.get(
+  '/activities/:id/security-export.pdf',
+  ensureAuth,
+  asyncHandler(async (req, res) => {
+    const activity = await getActivityById(req.params.id);
+    if (!activity) {
+      return res.status(404).render('error', { message: 'Activity not found.' });
+    }
+
+    const pdf = buildSecurityDetailPdf(activity, {
+      title: `${activity.reference_code} · Security measures`,
+      subtitleLines: [
+        `Activity: ${activity.activity_name}`,
+        `Status: ${statusLabel(activity.status)}`,
+        `Next review: ${activity.next_review_date || 'Not set'}`
+      ]
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${activity.reference_code}-security-measures.pdf"`);
+    return res.send(pdf);
+  })
+);
+
+app.get(
+  '/exports/security-measures.pdf',
+  ensureAuth,
+  asyncHandler(async (req, res) => {
+    const filters = buildActivityFilters(req.query);
+    const { whereSql, params, orderBy } = buildActivityWhere(filters);
+    const activities = (await db.prepare(`SELECT * FROM activities WHERE ${whereSql} ORDER BY ${orderBy}`).all(params)).map(
+      decorateActivity
+    );
+
+    const pdf = buildSecurityRegisterPdf(activities);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="futurewhiz-security-measures-register.pdf"');
     return res.send(pdf);
   })
 );

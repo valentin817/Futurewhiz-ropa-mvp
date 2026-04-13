@@ -1,0 +1,173 @@
+<%- include('partials/header', { pageTitle, user, currentPath, flash }) %>
+
+<section class="page-header">
+  <div>
+    <span class="eyebrow">Security register</span>
+    <h1>Security measures</h1>
+    <p>Review the security section across all processing activities and open each record directly into its full detail page.</p>
+  </div>
+  <div class="header-actions">
+    <button class="button secondary" type="button" data-search-toggle aria-expanded="<%= activeFilters.length ? 'true' : 'false' %>">Search</button>
+    <a class="button secondary" href="/exports/security-measures.pdf<%= exportQuery ? `?${exportQuery}` : '' %>">Export PDF</a>
+  </div>
+</section>
+
+<section class="panel search-panel <%= activeFilters.length ? 'is-open' : '' %>" data-search-panel <%= activeFilters.length ? '' : 'hidden' %>>
+  <div class="register-toolbar">
+    <div>
+      <h2>Search and filters</h2>
+      <p>Use the simplified security-focused filters when you need them.</p>
+    </div>
+  </div>
+
+  <form class="filters-grid" method="get" action="/security-measures">
+    <label class="span-2">
+      <span>Keyword search</span>
+      <input type="text" name="q" value="<%= filters.q %>" placeholder="Search activity, security measures, vendor, or reference" />
+    </label>
+
+    <label>
+      <span>Futurewhiz role</span>
+      <select name="futurewhiz_role">
+        <option value="">All roles</option>
+        <option value="controller" <%= filters.futurewhiz_role === 'controller' ? 'selected' : '' %>>Futurewhiz as controller</option>
+        <option value="processor" <%= filters.futurewhiz_role === 'processor' ? 'selected' : '' %>>Futurewhiz as processor</option>
+      </select>
+    </label>
+
+    <label>
+      <span>Department</span>
+      <select name="department">
+        <option value="">All departments</option>
+        <% filterOptions.departments.forEach((department) => { %>
+          <option value="<%= department %>" <%= filters.department === department ? 'selected' : '' %>><%= department %></option>
+        <% }) %>
+      </select>
+    </label>
+
+    <label>
+      <span>Product / service</span>
+      <select name="product">
+        <option value="">All products</option>
+        <% filterOptions.products.forEach((product) => { %>
+          <option value="<%= product %>" <%= filters.product === product ? 'selected' : '' %>><%= product %></option>
+        <% }) %>
+      </select>
+    </label>
+
+    <label>
+      <span>Business owner</span>
+      <select name="owner">
+        <option value="">All owners</option>
+        <% filterOptions.owners.forEach((owner) => { %>
+          <option value="<%= owner.email %>" <%= filters.owner === owner.email ? 'selected' : '' %>><%= owner.name %></option>
+        <% }) %>
+      </select>
+    </label>
+
+    <label>
+      <span>Status</span>
+      <select name="status">
+        <option value="">All statuses</option>
+        <% ['draft','pending_business_input','pending_legal_review','approved','needs_update','archived'].forEach((statusValue) => { %>
+          <option value="<%= statusValue %>" <%= filters.status === statusValue ? 'selected' : '' %>><%= statusLabel(statusValue) %></option>
+        <% }) %>
+      </select>
+    </label>
+
+    <label>
+      <span>Overdue review</span>
+      <select name="overdue_review">
+        <% booleanFilters.forEach((option) => { %>
+          <option value="<%= option.value %>" <%= filters.overdue_review === option.value ? 'selected' : '' %>><%= option.label %></option>
+        <% }) %>
+      </select>
+    </label>
+
+    <label>
+      <span>Security measures field</span>
+      <select name="missing_security_measures">
+        <% booleanFilters.forEach((option) => { %>
+          <option value="<%= option.value %>" <%= filters.missing_security_measures === option.value ? 'selected' : '' %>><%= option.label %></option>
+        <% }) %>
+      </select>
+    </label>
+
+    <label>
+      <span>Sort by</span>
+      <select name="sort">
+        <option value="next_review_asc" <%= filters.sort === 'next_review_asc' ? 'selected' : '' %>>Next review date</option>
+        <option value="updated_desc" <%= filters.sort === 'updated_desc' ? 'selected' : '' %>>Last updated</option>
+        <option value="activity_name_asc" <%= filters.sort === 'activity_name_asc' ? 'selected' : '' %>>Activity name</option>
+        <option value="status_asc" <%= filters.sort === 'status_asc' ? 'selected' : '' %>>Status</option>
+      </select>
+    </label>
+
+    <div class="filter-actions span-2">
+      <button class="button" type="submit">Apply filters</button>
+      <a class="button ghost" href="/security-measures">Reset</a>
+    </div>
+  </form>
+</section>
+
+<section class="register-card-list">
+  <% if (activeFilters.length) { %>
+    <div class="active-filter-list">
+      <% activeFilters.forEach((filter) => { %>
+        <span class="filter-chip"><%= filter %></span>
+      <% }) %>
+    </div>
+  <% } %>
+
+  <% if (activities.length === 0) { %>
+    <section class="panel">
+      <p class="muted">No activities matched the selected filters.</p>
+    </section>
+  <% } else { %>
+    <section class="panel security-grid-panel">
+      <% activities.forEach((activity) => { %>
+        <div class="security-card-row">
+          <div class="security-card-main">
+            <div class="security-card-title-row">
+              <strong><%= activity.activity_name %></strong>
+              <span class="status-pill <%= statusClass(activity.status) %>"><%= statusLabel(activity.status) %></span>
+            </div>
+            <div class="security-card-meta">
+              <span><%= activity.department || 'Not set' %></span>
+              <span><%= activity.product_service || 'Not set' %></span>
+              <span><%= activity.business_owner_name || activity.business_owner_email || 'Not set' %></span>
+              <span class="<%= activity.is_overdue ? 'review-date overdue' : 'review-date' %>"><%= activity.next_review_date ? formatDate(activity.next_review_date) : 'Not set' %></span>
+            </div>
+            <div class="security-card-text"><%= activity.security_measures || 'Missing security measures' %></div>
+          </div>
+          <div class="security-card-actions">
+            <a class="button ghost" href="/activities/<%= activity.id %>#security-measures">Open</a>
+            <a class="button ghost" href="/activities/<%= activity.id %>/security-export.pdf">PDF</a>
+          </div>
+        </div>
+      <% }) %>
+    </section>
+  <% } %>
+</section>
+
+<script>
+  const searchToggle = document.querySelector('[data-search-toggle]');
+  const searchPanel = document.querySelector('[data-search-panel]');
+
+  if (searchToggle && searchPanel) {
+    searchToggle.addEventListener('click', () => {
+      const isHidden = searchPanel.hasAttribute('hidden');
+      if (isHidden) {
+        searchPanel.removeAttribute('hidden');
+        searchPanel.classList.add('is-open');
+        searchToggle.setAttribute('aria-expanded', 'true');
+      } else {
+        searchPanel.setAttribute('hidden', '');
+        searchPanel.classList.remove('is-open');
+        searchToggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
+</script>
+
+<%- include('partials/footer') %>

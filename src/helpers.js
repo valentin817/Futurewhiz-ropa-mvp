@@ -752,6 +752,122 @@ export function buildCompanyDetailsPdf(controllerProfile, { title = 'Company det
   return buildVerticalFieldSheetPdf(rows, { title, subtitleLines });
 }
 
+export function buildSecurityDetailPdf(activity, { title, subtitleLines = [] } = {}) {
+  const rows = [
+    { label: 'Activity', value: activity.activity_name || 'Not set' },
+    { label: 'Short description', value: activity.short_description || 'Not set' },
+    { label: 'Department', value: activity.department || 'Not set' },
+    { label: 'Product / service', value: activity.product_service || 'Not set' },
+    { label: 'Purpose of processing', value: activity.purpose_of_processing || 'Not set' },
+    { label: 'Security measures', value: activity.security_measures || 'Missing security measures' },
+    { label: 'Status', value: activity.status || 'Not set' },
+    { label: 'Next review date', value: activity.next_review_date || 'Not set' },
+    { label: 'Business owner', value: activity.business_owner_name || activity.business_owner_email || 'Not set' },
+    { label: 'Security review reference', value: activity.security_review_ref || 'Missing' }
+  ];
+
+  return buildVerticalFieldSheetPdf(rows, { title, subtitleLines });
+}
+
+export function buildSecurityRegisterPdf(activities) {
+  const columns = [
+    { label: 'Activity', pdfWidth: 135, value: (activity) => [activity.activity_name, activity.short_description].filter(Boolean).join(' | ') },
+    { label: 'Department', pdfWidth: 80, value: (activity) => activity.department || 'Not set' },
+    { label: 'Product', pdfWidth: 78, value: (activity) => activity.product_service || 'Not set' },
+    { label: 'Security measures', pdfWidth: 180, value: (activity) => activity.security_measures || 'Missing security measures' },
+    { label: 'Status', pdfWidth: 72, value: (activity) => activity.status || 'Not set' },
+    { label: 'Next review', pdfWidth: 78, value: (activity) => activity.next_review_date || 'Not set' },
+    { label: 'Owner', pdfWidth: 78, value: (activity) => activity.business_owner_name || activity.business_owner_email || 'Not set' }
+  ];
+  const pageWidth = 760;
+  const pageHeight = 595;
+  const marginX = 18;
+  const marginTop = 18;
+  const marginBottom = 24;
+  const tableWidth = columns.reduce((sum, column) => sum + column.pdfWidth, 0);
+  const title = 'Security measures register';
+  const subtitleLines = [`Records exported: ${activities.length}`];
+  const wrappedSubtitleLines = subtitleLines.flatMap((line) => wrapPdfText(line, 110));
+  const headerHeight = 24;
+  const rowLineHeight = 8;
+  const rowFontSize = 6.9;
+  const headerFontSize = 7.2;
+  const rowPaddingX = 4;
+  const rowPaddingY = 4;
+  const maxCellLines = 6;
+  const pageStreams = [];
+  let rowIndex = 0;
+  let pageIndex = 0;
+
+  while (rowIndex < activities.length || (activities.length === 0 && pageIndex === 0)) {
+    const commands = [];
+    const titleBandHeight = pageIndex === 0 ? 40 : 24;
+    const titleTop = pageHeight - marginTop;
+    commands.push('0.08 0.29 0.33 rg');
+    commands.push(`${marginX} ${titleTop - titleBandHeight} ${tableWidth} ${titleBandHeight} re f`);
+    commands.push(pdfTextBlock(marginX + 8, titleTop - 18, [pageIndex === 0 ? title : `${title} (continued)`], 15, 16, { textColor: '1 g' }));
+    if (pageIndex === 0 && wrappedSubtitleLines.length) {
+      commands.push(pdfTextBlock(marginX + 8, titleTop - 30, wrappedSubtitleLines, 8.2, 10, { textColor: '0.92 g' }));
+    }
+
+    let cursorY = titleTop - titleBandHeight - 12;
+    let x = marginX;
+    commands.push('0.16 0.38 0.42 rg');
+    commands.push(`${marginX} ${cursorY - headerHeight} ${tableWidth} ${headerHeight} re f`);
+    commands.push('0.18 0.32 0.35 RG');
+    commands.push('0.6 w');
+    columns.forEach((column) => {
+      commands.push(`${x} ${cursorY - headerHeight} ${column.pdfWidth} ${headerHeight} re S`);
+      commands.push(pdfTextBlock(x + rowPaddingX, cursorY - rowPaddingY - headerFontSize - 2, [column.label], headerFontSize, 9, { textColor: '1 g' }));
+      x += column.pdfWidth;
+    });
+    cursorY -= headerHeight;
+
+    if (activities.length === 0) {
+      commands.push('0.82 0.82 0.82 RG');
+      commands.push(`${marginX} ${cursorY - 28} ${tableWidth} 28 re S`);
+      commands.push(pdfTextBlock(marginX + 4, cursorY - 12, ['No activities matched the selected filters.'], rowFontSize, rowLineHeight, { textColor: '0 g' }));
+      pageStreams.push(commands.filter(Boolean).join('\n'));
+      break;
+    }
+
+    while (rowIndex < activities.length) {
+      const activity = activities[rowIndex];
+      const cellMeta = columns.map((column) => {
+        const maxChars = Math.max(4, Math.floor((column.pdfWidth - rowPaddingX * 2) / 3.8));
+        const lines = clampPdfLines(wrapPdfText(column.value(activity) || '-', maxChars), maxCellLines, maxChars);
+        return { width: column.pdfWidth, lines };
+      });
+      const rowHeight = Math.max(24, Math.max(...cellMeta.map((cell) => cell.lines.length)) * rowLineHeight + rowPaddingY * 2);
+      if (cursorY - rowHeight < marginBottom) break;
+      if (rowIndex % 2 === 1) {
+        commands.push('0.97 0.96 0.93 rg');
+        commands.push(`${marginX} ${cursorY - rowHeight} ${tableWidth} ${rowHeight} re f`);
+      }
+      commands.push('0.77 0.77 0.74 RG');
+      commands.push('0.45 w');
+      x = marginX;
+      cellMeta.forEach((cell) => {
+        commands.push(`${x} ${cursorY - rowHeight} ${cell.width} ${rowHeight} re S`);
+        commands.push(pdfTextBlock(x + rowPaddingX, cursorY - rowPaddingY - rowFontSize - 1, cell.lines, rowFontSize, rowLineHeight, { textColor: '0.08 g' }));
+        x += cell.width;
+      });
+      cursorY -= rowHeight;
+      rowIndex += 1;
+    }
+
+    pageStreams.push(commands.filter(Boolean).join('\n'));
+    pageIndex += 1;
+  }
+
+  return buildPdfDocument(pageStreams, {
+    pageWidth,
+    pageHeight,
+    footerBuilder: (index, count) =>
+      `0.25 g\nBT /F1 8 Tf ${marginX} 12 Td (${pdfEscape(`Page ${index + 1} of ${count}`)}) Tj ET`
+  });
+}
+
 export function activityPdfLines(activity, attachments = [], changes = [], controllerProfile = null) {
   const lines = [];
 

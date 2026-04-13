@@ -104,12 +104,13 @@
     <% } %>
   </article>
 
-  <article class="panel security-panel">
+  <article class="panel security-panel" id="security-measures">
     <div class="section-heading">
       <div>
         <h2>Security measures</h2>
         <p>This field is mandatory and intentionally highlighted for Article 30 review.</p>
       </div>
+      <a class="button ghost" href="/activities/<%= activity.id %>/security-export.pdf">Export security PDF</a>
     </div>
     <div class="rich-text"><%= activity.security_measures || 'Missing security measures' %></div>
     <% if (activity.missing_security_measures) { %>
