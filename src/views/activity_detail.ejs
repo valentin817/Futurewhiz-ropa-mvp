@@ -1,0 +1,270 @@
+<%- include('partials/header', { pageTitle, user, currentPath, flash }) %>
+
+<section class="page-header">
+  <div>
+    <span class="eyebrow"><%= activity.reference_code %></span>
+    <h1><%= activity.activity_name %></h1>
+    <p><%= activity.short_description %></p>
+  </div>
+  <div class="header-actions">
+    <span class="status-pill <%= statusClass(activity.status) %>"><%= statusLabel(activity.status) %></span>
+    <% if (canEdit) { %>
+      <a class="button secondary" href="/activities/<%= activity.id %>/edit">Edit record</a>
+    <% } %>
+    <a class="button" href="/activities/<%= activity.id %>/export.pdf">Export PDF</a>
+  </div>
+</section>
+
+<section class="detail-grid">
+  <article class="panel">
+    <div class="section-heading">
+      <div>
+        <h2>Ownership and accountability</h2>
+      </div>
+    </div>
+    <dl class="detail-list">
+      <div>
+        <dt>Controller</dt>
+        <dd><%= activity.controller_name %> <span class="muted"><%= activity.controller_contact_details %></span></dd>
+      </div>
+      <div>
+        <dt>Joint controller</dt>
+        <dd><%= activity.joint_controller_name || 'Not applicable' %> <span class="muted"><%= activity.joint_controller_contact_details %></span></dd>
+      </div>
+      <div>
+        <dt>Controller representative</dt>
+        <dd><%= activity.controller_representative_name || 'Not applicable' %> <span class="muted"><%= activity.controller_representative_contact_details %></span></dd>
+      </div>
+      <div>
+        <dt>Data Protection Officer</dt>
+        <dd><%= activity.dpo_name || 'Not applicable' %> <span class="muted"><%= activity.dpo_contact_details %></span></dd>
+      </div>
+      <div>
+        <dt>Business owner</dt>
+        <dd><%= activity.business_owner_name %> <span class="muted"><%= activity.business_owner_email %></span></dd>
+      </div>
+      <div>
+        <dt>Legal reviewer</dt>
+        <dd><%= activity.legal_reviewer_name || 'Not assigned' %> <span class="muted"><%= activity.legal_reviewer_email %></span></dd>
+      </div>
+      <div>
+        <dt>Last updated by</dt>
+        <dd><%= activity.last_updated_by_name || activity.last_updated_by_email %></dd>
+      </div>
+      <div>
+        <dt>Last updated</dt>
+        <dd><%= formatDateTime(activity.last_updated_at) %></dd>
+      </div>
+      <div>
+        <dt>Last review date</dt>
+        <dd><%= activity.last_review_date ? formatDate(activity.last_review_date) : 'Not set' %></dd>
+      </div>
+      <div>
+        <dt>Next review date</dt>
+        <dd>
+          <%= activity.next_review_date ? formatDate(activity.next_review_date) : 'Not set' %>
+          <% if (activity.is_overdue) { %><span class="flag danger">Overdue</span><% } %>
+        </dd>
+      </div>
+    </dl>
+  </article>
+
+  <article class="panel security-panel">
+    <div class="section-heading">
+      <div>
+        <h2>Security measures</h2>
+        <p>This field is mandatory and intentionally highlighted for Article 30 review.</p>
+      </div>
+    </div>
+    <div class="rich-text"><%= activity.security_measures || 'Missing security measures' %></div>
+    <% if (activity.missing_security_measures) { %>
+      <div class="flag danger">Security measures missing</div>
+    <% } %>
+  </article>
+</section>
+
+<section class="detail-grid">
+  <article class="panel">
+    <h2>Processing details</h2>
+    <dl class="detail-list">
+      <div><dt>Department</dt><dd><%= activity.department %></dd></div>
+      <div><dt>Product / service</dt><dd><%= activity.product_service %></dd></div>
+      <div><dt>Purpose of processing</dt><dd><%= activity.purpose_of_processing %></dd></div>
+      <div><dt>Lawful basis</dt><dd><%= activity.lawful_basis || 'Not set' %></dd></div>
+      <div><dt>Data subjects</dt><dd><%= activity.data_subject_categories.length ? activity.data_subject_categories.join(', ') : 'Not set' %></dd></div>
+      <div><dt>Personal data</dt><dd><%= activity.personal_data_categories.length ? activity.personal_data_categories.join(', ') : 'Not set' %></dd></div>
+      <div><dt>Recipients</dt><dd><%= activity.recipient_categories.length ? activity.recipient_categories.join(', ') : 'Not set' %></dd></div>
+      <div><dt>Processors / vendors</dt><dd><%= activity.processors_vendors.length ? activity.processors_vendors.join(', ') : 'Not set' %></dd></div>
+      <div><dt>International transfers</dt><dd><%= activity.international_transfers ? 'Yes' : 'No' %></dd></div>
+      <div><dt>Transfer safeguards</dt><dd><%= activity.transfer_mechanisms.length ? activity.transfer_mechanisms.join(', ') : 'Not set' %></dd></div>
+      <div><dt>Transfer countries</dt><dd><%= activity.transfer_countries.length ? activity.transfer_countries.join(', ') : 'Not set' %></dd></div>
+      <div><dt>Retention period</dt><dd><%= activity.retention_period || 'Missing retention period' %></dd></div>
+      <div><dt>Source of personal data</dt><dd><%= activity.source_of_personal_data || 'Not set' %></dd></div>
+      <div><dt>Children’s data</dt><dd><%= activity.children_data ? 'Yes' : 'No' %></dd></div>
+      <div><dt>Special category data</dt><dd><%= activity.special_category_data ? 'Yes' : 'No' %></dd></div>
+      <div><dt>AI systems involved</dt><dd><%= activity.ai_involvement ? 'Yes' : 'No' %></dd></div>
+    </dl>
+  </article>
+
+  <article class="panel">
+    <h2>Linked compliance items</h2>
+    <dl class="detail-list">
+      <div>
+        <dt>Vendor review / DPA</dt>
+        <dd>
+          <%= activity.vendor_review_ref || 'Missing' %>
+          <% if (activity.vendor_review_url) { %><a class="inline-link" href="<%= activity.vendor_review_url %>">Open</a><% } %>
+        </dd>
+      </div>
+      <div>
+        <dt>DPIA</dt>
+        <dd>
+          <%= activity.dpia_ref || 'Missing' %>
+          <% if (activity.dpia_url) { %><a class="inline-link" href="<%= activity.dpia_url %>">Open</a><% } %>
+        </dd>
+      </div>
+      <div>
+        <dt>LIA</dt>
+        <dd>
+          <%= activity.lia_ref || 'Not linked' %>
+          <% if (activity.lia_url) { %><a class="inline-link" href="<%= activity.lia_url %>">Open</a><% } %>
+        </dd>
+      </div>
+      <div>
+        <dt>Privacy notice section</dt>
+        <dd>
+          <%= activity.privacy_notice_ref || 'Not linked' %>
+          <% if (activity.privacy_notice_url) { %><a class="inline-link" href="<%= activity.privacy_notice_url %>">Open</a><% } %>
+        </dd>
+      </div>
+      <div>
+        <dt>Security review</dt>
+        <dd>
+          <%= activity.security_review_ref || 'Missing' %>
+          <% if (activity.security_review_url) { %><a class="inline-link" href="<%= activity.security_review_url %>">Open</a><% } %>
+        </dd>
+      </div>
+      <div>
+        <dt>AI tool review</dt>
+        <dd>
+          <%= activity.ai_tool_review_ref || 'Not linked' %>
+          <% if (activity.ai_tool_review_url) { %><a class="inline-link" href="<%= activity.ai_tool_review_url %>">Open</a><% } %>
+        </dd>
+      </div>
+    </dl>
+  </article>
+</section>
+
+<section class="detail-grid">
+  <% if (canChangeStatus) { %>
+    <article class="panel">
+      <h2>Review and approval workflow</h2>
+      <form class="stack" method="post" action="/activities/<%= activity.id %>/status">
+        <label>
+          <span>Workflow status</span>
+          <select name="status">
+            <% statusOptions.forEach((option) => { %>
+              <option value="<%= option.value %>" <%= option.value === activity.status ? 'selected' : '' %>><%= option.label %></option>
+            <% }) %>
+          </select>
+        </label>
+        <label>
+          <span>Review date when approving</span>
+          <input type="date" name="last_review_date" value="<%= activity.last_review_date %>" />
+        </label>
+        <label>
+          <span>Workflow notes</span>
+          <textarea name="workflow_notes" rows="4"><%= activity.workflow_notes %></textarea>
+        </label>
+        <label>
+          <span>Reason for change</span>
+          <input type="text" name="change_reason" placeholder="Why is the status changing?" />
+        </label>
+        <button class="button" type="submit">Update workflow</button>
+      </form>
+    </article>
+  <% } %>
+
+  <article class="panel">
+    <h2>Supporting files</h2>
+    <% if (canEdit) { %>
+      <form class="stack" method="post" action="/activities/<%= activity.id %>/attachments" enctype="multipart/form-data">
+        <label>
+          <span>Attachment type</span>
+          <select name="attachment_type">
+            <% attachmentTypeOptions.forEach((option) => { %>
+              <option value="<%= option.value %>"><%= option.label %></option>
+            <% }) %>
+          </select>
+        </label>
+        <label>
+          <span>Label</span>
+          <input type="text" name="label" placeholder="Optional label" />
+        </label>
+        <label>
+          <span>Files</span>
+          <input type="file" name="files" multiple />
+        </label>
+        <button class="button secondary" type="submit">Upload attachment</button>
+      </form>
+    <% } %>
+
+    <div class="attachment-list">
+      <% if (attachments.length === 0) { %>
+        <p class="muted">No attachments uploaded yet.</p>
+      <% } %>
+      <% attachments.forEach((attachment) => { %>
+        <div class="attachment-item">
+          <div>
+            <strong><%= attachment.label || attachment.original_name %></strong>
+            <div class="muted"><%= attachment.attachment_type %> · uploaded <%= formatDateTime(attachment.uploaded_at) %></div>
+          </div>
+          <a class="button ghost" href="/attachments/<%= attachment.id %>/download">Download</a>
+        </div>
+      <% }) %>
+    </div>
+  </article>
+</section>
+
+<section class="detail-grid">
+  <article class="panel">
+    <h2>Related intake requests</h2>
+    <% if (relatedIntakes.length === 0) { %>
+      <p class="muted">No intake requests linked to this record yet.</p>
+    <% } %>
+    <div class="timeline-list">
+      <% relatedIntakes.forEach((request) => { %>
+        <div class="timeline-item">
+          <div class="timeline-title"><%= request.title %></div>
+          <div class="muted"><%= request.request_code %> · <%= request.trigger_type %> · <%= formatDateTime(request.created_at) %></div>
+          <p><%= request.summary %></p>
+        </div>
+      <% }) %>
+    </div>
+  </article>
+
+  <article class="panel">
+    <h2>Audit trail / change log</h2>
+    <div class="timeline-list">
+      <% changes.forEach((change) => { %>
+        <div class="timeline-item">
+          <div class="timeline-title"><%= change.field_name || change.event_type %></div>
+          <div class="muted"><%= change.actor_name || change.actor_email %> · <%= formatDateTime(change.created_at) %></div>
+          <p>
+            <% if (change.old_value || change.new_value) { %>
+              <strong>From:</strong> <%= change.old_value || 'Empty' %><br />
+              <strong>To:</strong> <%= change.new_value || 'Empty' %>
+            <% } else { %>
+              <%= change.event_type %>
+            <% } %>
+          </p>
+          <% if (change.reason) { %>
+            <div class="muted">Reason: <%= change.reason %></div>
+          <% } %>
+        </div>
+      <% }) %>
+    </div>
+  </article>
+</section>
+
+<%- include('partials/footer') %>

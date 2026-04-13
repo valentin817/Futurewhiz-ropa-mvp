@@ -1,0 +1,94 @@
+<%- include('partials/header', { pageTitle, user, currentPath, flash }) %>
+
+<section class="page-header">
+  <div>
+    <span class="eyebrow">Admin</span>
+    <h1>Configuration and user management</h1>
+    <p>Admins can manage internal users and the vocabulary values that keep the RoPA consistent.</p>
+  </div>
+</section>
+
+<section class="content-grid">
+  <article class="panel">
+    <h2>Add user</h2>
+    <form class="stack" method="post" action="/admin/users">
+      <input type="hidden" name="action" value="create" />
+      <label><span>Name</span><input type="text" name="name" required /></label>
+      <label><span>Email</span><input type="email" name="email" required /></label>
+      <label>
+        <span>Role</span>
+        <select name="role">
+          <option value="business">Business user</option>
+          <option value="legal">Legal/privacy reviewer</option>
+          <option value="admin">Admin</option>
+        </select>
+      </label>
+      <label><span>Department</span><input type="text" name="department" /></label>
+      <label class="checkbox-card">
+        <input type="checkbox" name="active" value="1" checked />
+        <span>Active user</span>
+      </label>
+      <button class="button" type="submit">Add user</button>
+    </form>
+
+    <div class="divider"></div>
+
+    <h2>Users</h2>
+    <div class="stack">
+      <% users.forEach((managedUser) => { %>
+        <form class="inline-form-card" method="post" action="/admin/users">
+          <input type="hidden" name="action" value="update" />
+          <input type="hidden" name="user_id" value="<%= managedUser.id %>" />
+          <input type="text" name="name" value="<%= managedUser.name %>" />
+          <input type="text" value="<%= managedUser.email %>" disabled />
+          <select name="role">
+            <option value="business" <%= managedUser.role === 'business' ? 'selected' : '' %>>Business</option>
+            <option value="legal" <%= managedUser.role === 'legal' ? 'selected' : '' %>>Legal/privacy</option>
+            <option value="admin" <%= managedUser.role === 'admin' ? 'selected' : '' %>>Admin</option>
+          </select>
+          <input type="text" name="department" value="<%= managedUser.department %>" />
+          <label class="mini-check">
+            <input type="checkbox" name="active" value="1" <%= managedUser.active ? 'checked' : '' %> />
+            <span>Active</span>
+          </label>
+          <button class="button secondary" type="submit">Save</button>
+        </form>
+      <% }) %>
+    </div>
+  </article>
+
+  <article class="panel">
+    <h2>Add vocabulary value</h2>
+    <form class="stack" method="post" action="/admin/vocabulary">
+      <input type="hidden" name="action" value="create" />
+      <label><span>Group key</span><input type="text" name="group_key" placeholder="department" required /></label>
+      <label><span>Label</span><input type="text" name="label" required /></label>
+      <label><span>Sort order</span><input type="number" name="sort_order" value="50" /></label>
+      <button class="button" type="submit">Add vocabulary value</button>
+    </form>
+
+    <div class="divider"></div>
+
+    <% Object.entries(vocabularyGroups).forEach(([groupKey, entries]) => { %>
+      <h3><%= groupKey %></h3>
+      <div class="stack">
+        <% entries.forEach((entry) => { %>
+          <form class="inline-form-card" method="post" action="/admin/vocabulary">
+            <input type="hidden" name="action" value="update" />
+            <input type="hidden" name="vocabulary_id" value="<%= entry.id %>" />
+            <input type="text" value="<%= entry.value_key %>" disabled />
+            <input type="text" name="label" value="<%= entry.label %>" />
+            <input type="number" name="sort_order" value="<%= entry.sort_order %>" />
+            <label class="mini-check">
+              <input type="checkbox" name="active" value="1" <%= entry.active ? 'checked' : '' %> />
+              <span>Active</span>
+            </label>
+            <button class="button secondary" type="submit">Save</button>
+          </form>
+        <% }) %>
+      </div>
+    <% }) %>
+  </article>
+</section>
+
+<%- include('partials/footer') %>

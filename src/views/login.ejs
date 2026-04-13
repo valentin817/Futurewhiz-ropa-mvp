@@ -1,0 +1,54 @@
+<%- include('partials/header', { pageTitle: 'Sign in', user: null, currentPath: '/login', flash }) %>
+
+<%
+  const adminDemo = demoUsers.find((demoUser) => demoUser.role === 'admin');
+  const standardDemo = demoUsers.find((demoUser) => demoUser.role === 'business') || demoUsers.find((demoUser) => demoUser.role === 'legal');
+  const featuredDemoUsers = [adminDemo, standardDemo].filter(Boolean);
+%>
+
+<section class="hero-grid">
+  <div class="panel hero-copy">
+    <div class="welcome-stage">
+      <span class="eyebrow">Futurewhiz B.V.</span>
+      <h1 class="welcome-title">Records of processing activities</h1>
+
+      <div class="login-path-grid">
+        <% if (adminDemo) { %>
+          <form method="post" action="/login" class="login-path-card login-path-card-admin">
+            <input type="hidden" name="email" value="<%= adminDemo.email %>" />
+            <span class="login-path-label">Admin access</span>
+            <button class="button" type="submit">Sign in</button>
+          </form>
+        <% } %>
+
+        <% if (standardDemo) { %>
+          <form method="post" action="/login" class="login-path-card">
+            <input type="hidden" name="email" value="<%= standardDemo.email %>" />
+            <span class="login-path-label">Register access</span>
+            <button class="button secondary" type="submit">Sign in</button>
+          </form>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel login-panel">
+    <div class="login-section">
+      <h2>Demo accounts</h2>
+      <div class="stack">
+        <% featuredDemoUsers.forEach((demoUser) => { %>
+          <form method="post" action="/login" class="demo-login-row">
+            <input type="hidden" name="email" value="<%= demoUser.email %>" />
+            <div>
+              <strong><%= demoUser.name %></strong>
+              <div class="muted"><%= demoUser.email %> · <%= demoUser.role %></div>
+            </div>
+            <button class="button secondary" type="submit">Sign in</button>
+          </form>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

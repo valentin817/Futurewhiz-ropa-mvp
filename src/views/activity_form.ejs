@@ -1,0 +1,387 @@
+<%- include('partials/header', { pageTitle, user, currentPath, flash }) %>
+
+<section class="page-header">
+  <div>
+    <span class="eyebrow"><%= activity ? activity.reference_code : 'New record' %></span>
+    <h1><%= activity ? 'Edit processing activity' : 'Create processing activity' %></h1>
+    <p>Use structured fields and controlled vocabularies so the register stays reviewable, searchable, and auditable.</p>
+  </div>
+  <div class="header-actions">
+    <% if (activity) { %>
+      <a class="button secondary" href="/activities/<%= activity.id %>">Back to detail</a>
+    <% } else { %>
+      <a class="button secondary" href="/activities">Back to register</a>
+    <% } %>
+  </div>
+</section>
+
+<% if (errors.length > 0) { %>
+  <section class="panel error-panel">
+    <h2>Please fix the following</h2>
+    <ul class="bullet-list">
+      <% errors.forEach((error) => { %>
+        <li><%= error %></li>
+      <% }) %>
+    </ul>
+  </section>
+<% } %>
+
+<form class="stack-lg" method="post" action="<%= activity ? `/activities/${activity.id}` : '/activities' %>">
+  <section class="panel form-section">
+    <div class="section-heading">
+      <div>
+        <h2>Core activity details</h2>
+        <p>Basic ownership, purpose, and workflow fields.</p>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <label class="span-2">
+        <span>Activity name *</span>
+        <input type="text" name="activity_name" value="<%= formValues.activity_name %>" required />
+      </label>
+
+      <label class="span-2">
+        <span>Short description *</span>
+        <textarea name="short_description" rows="3" required><%= formValues.short_description %></textarea>
+      </label>
+
+      <label>
+        <span>Business owner *</span>
+        <select name="business_owner_email" required>
+          <option value="">Select owner</option>
+          <% businessOwners.forEach((owner) => { %>
+            <option value="<%= owner.email %>" <%= formValues.business_owner_email === owner.email ? 'selected' : '' %>><%= owner.name %></option>
+          <% }) %>
+        </select>
+      </label>
+
+      <label>
+        <span>Legal reviewer</span>
+        <select name="legal_reviewer_email">
+          <option value="">Not assigned</option>
+          <% legalReviewers.forEach((reviewer) => { %>
+            <option value="<%= reviewer.email %>" <%= formValues.legal_reviewer_email === reviewer.email ? 'selected' : '' %>><%= reviewer.name %></option>
+          <% }) %>
+        </select>
+      </label>
+
+      <label>
+        <span>Department *</span>
+        <select name="department" required>
+          <option value="">Select department</option>
+          <% vocab.departments.forEach((item) => { %>
+            <option value="<%= item.label %>" <%= formValues.department === item.label ? 'selected' : '' %>><%= item.label %></option>
+          <% }) %>
+        </select>
+      </label>
+
+      <label>
+        <span>Product / service *</span>
+        <select name="product_service" required>
+          <option value="">Select product</option>
+          <% vocab.products.forEach((item) => { %>
+            <option value="<%= item.label %>" <%= formValues.product_service === item.label ? 'selected' : '' %>><%= item.label %></option>
+          <% }) %>
+        </select>
+      </label>
+
+      <label class="span-2">
+        <span>Purpose of processing *</span>
+        <textarea name="purpose_of_processing" rows="4" required><%= formValues.purpose_of_processing %></textarea>
+      </label>
+
+      <label>
+        <span>Lawful basis *</span>
+        <select name="lawful_basis" required>
+          <option value="">Select lawful basis</option>
+          <% vocab.lawfulBases.forEach((item) => { %>
+            <option value="<%= item.label %>" <%= formValues.lawful_basis === item.label ? 'selected' : '' %>><%= item.label %></option>
+          <% }) %>
+        </select>
+      </label>
+
+      <label>
+        <span>Status <%= canSetStatus ? '*' : '' %></span>
+        <select name="status" <%= canSetStatus ? 'required' : 'disabled' %>>
+          <% statusOptions.forEach((statusOption) => { %>
+            <option value="<%= statusOption.value %>" <%= formValues.status === statusOption.value ? 'selected' : '' %>><%= statusOption.label %></option>
+          <% }) %>
+        </select>
+        <% if (!canSetStatus) { %>
+          <input type="hidden" name="status" value="<%= formValues.status %>" />
+          <div class="field-help">Business users can propose edits, but legal/privacy controls workflow status.</div>
+        <% } %>
+      </label>
+    </div>
+  </section>
+
+  <section class="panel form-section">
+    <div class="section-heading">
+      <div>
+        <h2>Data scope</h2>
+        <p>Use controlled multi-select fields where possible for consistency.</p>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <label>
+        <span>Categories of data subjects</span>
+        <select name="data_subject_categories" multiple size="7">
+          <% vocab.dataSubjects.forEach((item) => { %>
+            <option value="<%= item.label %>" <%= formValues.data_subject_categories.includes(item.label) ? 'selected' : '' %>><%= item.label %></option>
+          <% }) %>
+        </select>
+      </label>
+
+      <label>
+        <span>Categories of personal data</span>
+        <select name="personal_data_categories" multiple size="7">
+          <% vocab.personalData.forEach((item) => { %>
+            <option value="<%= item.label %>" <%= formValues.personal_data_categories.includes(item.label) ? 'selected' : '' %>><%= item.label %></option>
+          <% }) %>
+        </select>
+      </label>
+
+      <label>
+        <span>Categories of recipients</span>
+        <select name="recipient_categories" multiple size="7">
+          <% vocab.recipients.forEach((item) => { %>
+            <option value="<%= item.label %>" <%= formValues.recipient_categories.includes(item.label) ? 'selected' : '' %>><%= item.label %></option>
+          <% }) %>
+        </select>
+      </label>
+
+      <label>
+        <span>Processors / vendors involved</span>
+        <textarea name="processors_vendors" rows="7" placeholder="One vendor per line"><%= formValues.processors_vendors %></textarea>
+        <div class="field-help">Use one vendor per line so filtering stays consistent.</div>
+      </label>
+
+      <label>
+        <span>Source of personal data</span>
+        <textarea name="source_of_personal_data" rows="4"><%= formValues.source_of_personal_data %></textarea>
+      </label>
+
+      <div class="toggle-grid">
+        <label class="checkbox-card">
+          <input type="checkbox" name="children_data" value="1" <%= Number(formValues.children_data) ? 'checked' : '' %> />
+          <span>Children’s data involved</span>
+        </label>
+        <label class="checkbox-card">
+          <input type="checkbox" name="special_category_data" value="1" <%= Number(formValues.special_category_data) ? 'checked' : '' %> />
+          <span>Special category data involved</span>
+        </label>
+        <label class="checkbox-card">
+          <input type="checkbox" name="ai_involvement" value="1" <%= Number(formValues.ai_involvement) ? 'checked' : '' %> />
+          <span>AI systems involved</span>
+        </label>
+        <label class="checkbox-card">
+          <input type="checkbox" name="international_transfers" value="1" <%= Number(formValues.international_transfers) ? 'checked' : '' %> />
+          <span>International transfers</span>
+        </label>
+      </div>
+
+      <label>
+        <span>Transfer mechanisms / safeguards</span>
+        <select name="transfer_mechanisms" multiple size="5">
+          <% vocab.transferMechanisms.forEach((item) => { %>
+            <option value="<%= item.label %>" <%= formValues.transfer_mechanisms.includes(item.label) ? 'selected' : '' %>><%= item.label %></option>
+          <% }) %>
+        </select>
+      </label>
+
+      <label>
+        <span>Transfer countries</span>
+        <textarea name="transfer_countries" rows="5" placeholder="One country per line"><%= formValues.transfer_countries %></textarea>
+      </label>
+    </div>
+  </section>
+
+  <section class="panel form-section">
+    <div class="section-heading">
+      <div>
+        <h2>Article 30 parties</h2>
+        <p>Capture the controller and any optional joint-controller, representative, or DPO details that should appear in the register.</p>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <label>
+        <span>Controller name *</span>
+        <input type="text" name="controller_name" value="<%= formValues.controller_name %>" required />
+      </label>
+
+      <label>
+        <span>Controller contact details *</span>
+        <textarea name="controller_contact_details" rows="3" required><%= formValues.controller_contact_details %></textarea>
+      </label>
+
+      <label>
+        <span>Joint controller name</span>
+        <input type="text" name="joint_controller_name" value="<%= formValues.joint_controller_name %>" />
+      </label>
+
+      <label>
+        <span>Joint controller contact details</span>
+        <textarea name="joint_controller_contact_details" rows="3"><%= formValues.joint_controller_contact_details %></textarea>
+      </label>
+
+      <label>
+        <span>Controller representative name</span>
+        <input type="text" name="controller_representative_name" value="<%= formValues.controller_representative_name %>" />
+      </label>
+
+      <label>
+        <span>Controller representative contact details</span>
+        <textarea name="controller_representative_contact_details" rows="3"><%= formValues.controller_representative_contact_details %></textarea>
+      </label>
+
+      <label>
+        <span>Data Protection Officer name</span>
+        <input type="text" name="dpo_name" value="<%= formValues.dpo_name %>" />
+      </label>
+
+      <label>
+        <span>Data Protection Officer contact details</span>
+        <textarea name="dpo_contact_details" rows="3"><%= formValues.dpo_contact_details %></textarea>
+      </label>
+    </div>
+  </section>
+
+  <section class="panel form-section security-panel">
+    <div class="section-heading">
+      <div>
+        <h2>Security measures *</h2>
+        <p>This field is mandatory for the RoPA and should capture technical and organisational controls in enough detail to support review and reporting.</p>
+      </div>
+    </div>
+
+    <label>
+      <span>Security measures *</span>
+      <textarea name="security_measures" rows="8" required><%= formValues.security_measures %></textarea>
+    </label>
+  </section>
+
+  <section class="panel form-section">
+    <div class="section-heading">
+      <div>
+        <h2>Linked compliance items</h2>
+        <p>Use IDs and URLs so legal/privacy can trace supporting documentation quickly.</p>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <label>
+        <span>Vendor review / DPA ID</span>
+        <input type="text" name="vendor_review_ref" value="<%= formValues.vendor_review_ref %>" />
+      </label>
+      <label>
+        <span>Vendor review / DPA URL</span>
+        <input type="url" name="vendor_review_url" value="<%= formValues.vendor_review_url %>" />
+      </label>
+
+      <label>
+        <span>DPIA ID</span>
+        <input type="text" name="dpia_ref" value="<%= formValues.dpia_ref %>" />
+      </label>
+      <label>
+        <span>DPIA URL</span>
+        <input type="url" name="dpia_url" value="<%= formValues.dpia_url %>" />
+      </label>
+
+      <label>
+        <span>LIA ID</span>
+        <input type="text" name="lia_ref" value="<%= formValues.lia_ref %>" />
+      </label>
+      <label>
+        <span>LIA URL</span>
+        <input type="url" name="lia_url" value="<%= formValues.lia_url %>" />
+      </label>
+
+      <label>
+        <span>Privacy notice section</span>
+        <input type="text" name="privacy_notice_ref" value="<%= formValues.privacy_notice_ref %>" />
+      </label>
+      <label>
+        <span>Privacy notice URL</span>
+        <input type="url" name="privacy_notice_url" value="<%= formValues.privacy_notice_url %>" />
+      </label>
+
+      <label>
+        <span>Security review ID</span>
+        <input type="text" name="security_review_ref" value="<%= formValues.security_review_ref %>" />
+      </label>
+      <label>
+        <span>Security review URL</span>
+        <input type="url" name="security_review_url" value="<%= formValues.security_review_url %>" />
+      </label>
+
+      <label>
+        <span>AI tool review ID</span>
+        <input type="text" name="ai_tool_review_ref" value="<%= formValues.ai_tool_review_ref %>" />
+      </label>
+      <label>
+        <span>AI tool review URL</span>
+        <input type="url" name="ai_tool_review_url" value="<%= formValues.ai_tool_review_url %>" />
+      </label>
+    </div>
+  </section>
+
+  <section class="panel form-section">
+    <div class="section-heading">
+      <div>
+        <h2>Review cadence and notes</h2>
+        <p>Keep review ownership and timing explicit so reminders stay useful.</p>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <label>
+        <span>Retention period</span>
+        <textarea name="retention_period" rows="3"><%= formValues.retention_period %></textarea>
+      </label>
+
+      <label>
+        <span>Review cadence</span>
+        <select name="review_interval_months">
+          <% reviewIntervals.forEach((option) => { %>
+            <option value="<%= option.value %>" <%= Number(formValues.review_interval_months) === option.value ? 'selected' : '' %>><%= option.label %></option>
+          <% }) %>
+        </select>
+      </label>
+
+      <label>
+        <span>Last review date</span>
+        <input type="date" name="last_review_date" value="<%= formValues.last_review_date %>" />
+      </label>
+
+      <label>
+        <span>Next review date</span>
+        <input type="date" name="next_review_date" value="<%= formValues.next_review_date %>" />
+      </label>
+
+      <label class="span-2">
+        <span>Workflow notes</span>
+        <textarea name="workflow_notes" rows="3"><%= formValues.workflow_notes %></textarea>
+      </label>
+
+      <label class="span-2">
+        <span>Comments / notes</span>
+        <textarea name="comments_notes" rows="4"><%= formValues.comments_notes %></textarea>
+      </label>
+
+      <label class="span-2">
+        <span>Reason for change</span>
+        <input type="text" name="change_reason" placeholder="Optional but helpful for the audit trail" />
+      </label>
+    </div>
+  </section>
+
+  <div class="form-actions">
+    <button class="button" type="submit"><%= activity ? 'Save changes' : 'Create activity' %></button>
+    <a class="button ghost" href="<%= activity ? `/activities/${activity.id}` : '/activities' %>">Cancel</a>
+  </div>
+</form>
+
+<%- include('partials/footer') %>

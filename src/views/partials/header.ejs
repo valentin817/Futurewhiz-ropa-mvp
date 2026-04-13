@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= pageTitle ? `${pageTitle} · ` : '' %>Futurewhiz RoPA</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand-block">
+      <a class="brand-mark" href="<%= user ? '/dashboard' : '/login' %>">FW</a>
+    </div>
+
+    <nav class="site-nav">
+      <% if (user) { %>
+        <a class="<%= currentPath === '/dashboard' ? 'active' : '' %>" href="/dashboard">Dashboard</a>
+        <a class="<%= currentPath.startsWith('/activities') ? 'active' : '' %>" href="/activities">RoPA register</a>
+        <a class="<%= currentPath === '/intake' ? 'active' : '' %>" href="/intake">Intake</a>
+        <a href="/activities/new">New activity</a>
+        <% if (user.role === 'admin') { %>
+          <a class="<%= currentPath === '/admin' ? 'active' : '' %>" href="/admin">Admin</a>
+        <% } %>
+        <span class="user-chip"><%= user.name %></span>
+        <span class="role-chip"><%= user.role === 'legal' ? 'Legal/privacy' : user.role === 'admin' ? 'Admin' : 'Business' %></span>
+        <form method="post" action="/logout">
+          <button class="nav-link-button" type="submit">Sign out</button>
+        </form>
+      <% } else if (currentPath !== '/login') { %>
+        <a href="/login">Sign in</a>
+      <% } %>
+    </nav>
+  </header>
+
+  <main class="app-shell">
+    <% if (flash) { %>
+      <div class="flash flash-<%= flash.type %>"><%= flash.message %></div>
+    <% } %>

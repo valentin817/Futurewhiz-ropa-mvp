@@ -1,0 +1,97 @@
+<%- include('partials/header', { pageTitle, user, currentPath, flash }) %>
+
+<section class="page-header">
+  <div>
+    <span class="eyebrow">Trigger-based intake</span>
+    <h1>New intake request</h1>
+    <p>Business teams can use this lightweight flow to create a new RoPA draft or flag an existing record for update.</p>
+  </div>
+</section>
+
+<% if (errors.length > 0) { %>
+  <section class="panel error-panel">
+    <h2>Please fix the following</h2>
+    <ul class="bullet-list">
+      <% errors.forEach((error) => { %>
+        <li><%= error %></li>
+      <% }) %>
+    </ul>
+  </section>
+<% } %>
+
+<form class="stack-lg" method="post" action="/intake">
+  <section class="panel form-section">
+    <div class="form-grid">
+      <label>
+        <span>Trigger *</span>
+        <select name="trigger_type" required>
+          <option value="">Select a trigger</option>
+          <% intakeTriggerOptions.forEach((option) => { %>
+            <option value="<%= option.value %>" <%= values.trigger_type === option.value ? 'selected' : '' %>><%= option.label %></option>
+          <% }) %>
+        </select>
+      </label>
+
+      <label>
+        <span>Route the intake to *</span>
+        <select name="request_type" required>
+          <% intakeRequestTypeOptions.forEach((option) => { %>
+            <option value="<%= option.value %>" <%= values.request_type === option.value ? 'selected' : '' %>><%= option.label %></option>
+          <% }) %>
+        </select>
+      </label>
+
+      <label class="span-2">
+        <span>Request title *</span>
+        <input type="text" name="title" value="<%= values.title %>" required />
+      </label>
+
+      <label class="span-2">
+        <span>Summary *</span>
+        <textarea name="summary" rows="5" required><%= values.summary %></textarea>
+      </label>
+
+      <label>
+        <span>Department</span>
+        <select name="department">
+          <option value="">Select department</option>
+          <% vocab.departments.forEach((item) => { %>
+            <option value="<%= item.label %>" <%= values.department === item.label ? 'selected' : '' %>><%= item.label %></option>
+          <% }) %>
+        </select>
+      </label>
+
+      <label>
+        <span>Product / service</span>
+        <select name="product_service">
+          <option value="">Select product</option>
+          <% vocab.products.forEach((item) => { %>
+            <option value="<%= item.label %>" <%= values.product_service === item.label ? 'selected' : '' %>><%= item.label %></option>
+          <% }) %>
+        </select>
+      </label>
+
+      <label class="span-2">
+        <span>Existing activity to update</span>
+        <select name="linked_activity_id">
+          <option value="">Only required when flagging an existing record</option>
+          <% activities.forEach((activity) => { %>
+            <option value="<%= activity.id %>" <%= String(values.linked_activity_id) === String(activity.id) ? 'selected' : '' %>><%= activity.reference_code %> · <%= activity.activity_name %></option>
+          <% }) %>
+        </select>
+      </label>
+
+      <label class="checkbox-card span-2">
+        <input type="checkbox" name="material_change" value="1" <%= Number(values.material_change) ? 'checked' : '' %> />
+        <span>This is a material change that should bring forward the review date.</span>
+      </label>
+    </div>
+  </section>
+
+  <div class="form-actions">
+    <button class="button" type="submit">Submit intake</button>
+    <a class="button ghost" href="/dashboard">Cancel</a>
+  </div>
+</form>
+
+<%- include('partials/footer') %>

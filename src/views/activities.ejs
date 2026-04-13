@@ -1,0 +1,297 @@
+<%- include('partials/header', { pageTitle, user, currentPath, flash }) %>
+
+<section class="page-header">
+  <div>
+    <span class="eyebrow">Register</span>
+    <h1>RoPA register</h1>
+    <p>Search, filter, review, and export structured processing activities.</p>
+  </div>
+  <div class="header-actions">
+    <a class="button secondary" href="/exports/register.pdf<%= exportQuery ? `?${exportQuery}` : '' %>">Export PDF</a>
+    <a class="button secondary" href="/exports/register.csv<%= exportQuery ? `?${exportQuery}` : '' %>">Export CSV</a>
+    <a class="button secondary" href="/exports/register.xls<%= exportQuery ? `?${exportQuery}` : '' %>">Export Excel</a>
+    <a class="button" href="/activities/new">New activity</a>
+  </div>
+</section>
+
+<section class="panel">
+  <form class="filters-grid" method="get" action="/activities">
+    <label class="span-2">
+      <span>Keyword search</span>
+      <input type="text" name="q" value="<%= filters.q %>" placeholder="Search activity, purpose, vendor, security measures, or reference" />
+    </label>
+
+    <label>
+      <span>Vendor</span>
+      <select name="vendor">
+        <option value="">All vendors</option>
+        <% filterOptions.vendors.forEach((vendor) => { %>
+          <option value="<%= vendor %>" <%= filters.vendor === vendor ? 'selected' : '' %>><%= vendor %></option>
+        <% }) %>
+      </select>
+    </label>
+
+    <label>
+      <span>Product / service</span>
+      <select name="product">
+        <option value="">All products</option>
+        <% filterOptions.products.forEach((product) => { %>
+          <option value="<%= product %>" <%= filters.product === product ? 'selected' : '' %>><%= product %></option>
+        <% }) %>
+      </select>
+    </label>
+
+    <label>
+      <span>Department</span>
+      <select name="department">
+        <option value="">All departments</option>
+        <% filterOptions.departments.forEach((department) => { %>
+          <option value="<%= department %>" <%= filters.department === department ? 'selected' : '' %>><%= department %></option>
+        <% }) %>
+      </select>
+    </label>
+
+    <label>
+      <span>Business owner</span>
+      <select name="owner">
+        <option value="">All owners</option>
+        <% filterOptions.owners.forEach((owner) => { %>
+          <option value="<%= owner.email %>" <%= filters.owner === owner.email ? 'selected' : '' %>><%= owner.name %></option>
+        <% }) %>
+      </select>
+    </label>
+
+    <label>
+      <span>Status</span>
+      <select name="status">
+        <option value="">All statuses</option>
+        <% ['draft','pending_business_input','pending_legal_review','approved','needs_update','archived'].forEach((statusValue) => { %>
+          <option value="<%= statusValue %>" <%= filters.status === statusValue ? 'selected' : '' %>><%= statusLabel(statusValue) %></option>
+        <% }) %>
+      </select>
+    </label>
+
+    <label>
+      <span>Lawful basis</span>
+      <select name="lawful_basis">
+        <option value="">All lawful bases</option>
+        <% filterOptions.lawfulBases.forEach((lawfulBasis) => { %>
+          <option value="<%= lawfulBasis %>" <%= filters.lawful_basis === lawfulBasis ? 'selected' : '' %>><%= lawfulBasis %></option>
+        <% }) %>
+      </select>
+    </label>
+
+    <label>
+      <span>Children’s data</span>
+      <select name="children_data">
+        <% booleanFilters.forEach((option) => { %>
+          <option value="<%= option.value %>" <%= filters.children_data === option.value ? 'selected' : '' %>><%= option.label %></option>
+        <% }) %>
+      </select>
+    </label>
+
+    <label>
+      <span>Special category data</span>
+      <select name="special_category_data">
+        <% booleanFilters.forEach((option) => { %>
+          <option value="<%= option.value %>" <%= filters.special_category_data === option.value ? 'selected' : '' %>><%= option.label %></option>
+        <% }) %>
+      </select>
+    </label>
+
+    <label>
+      <span>International transfers</span>
+      <select name="international_transfers">
+        <% booleanFilters.forEach((option) => { %>
+          <option value="<%= option.value %>" <%= filters.international_transfers === option.value ? 'selected' : '' %>><%= option.label %></option>
+        <% }) %>
+      </select>
+    </label>
+
+    <label>
+      <span>AI involvement</span>
+      <select name="ai_involvement">
+        <% booleanFilters.forEach((option) => { %>
+          <option value="<%= option.value %>" <%= filters.ai_involvement === option.value ? 'selected' : '' %>><%= option.label %></option>
+        <% }) %>
+      </select>
+    </label>
+
+    <label>
+      <span>Overdue review</span>
+      <select name="overdue_review">
+        <% booleanFilters.forEach((option) => { %>
+          <option value="<%= option.value %>" <%= filters.overdue_review === option.value ? 'selected' : '' %>><%= option.label %></option>
+        <% }) %>
+      </select>
+    </label>
+
+    <label>
+      <span>Missing linked items</span>
+      <select name="missing_links">
+        <option value="">Any</option>
+        <option value="missing_dpia" <%= filters.missing_links === 'missing_dpia' ? 'selected' : '' %>>Missing DPIA</option>
+        <option value="missing_vendor_review" <%= filters.missing_links === 'missing_vendor_review' ? 'selected' : '' %>>Missing vendor review / DPA</option>
+        <option value="missing_security_review" <%= filters.missing_links === 'missing_security_review' ? 'selected' : '' %>>Missing security review</option>
+        <option value="missing_any_core_link" <%= filters.missing_links === 'missing_any_core_link' ? 'selected' : '' %>>Missing any core linked item</option>
+      </select>
+    </label>
+
+    <label>
+      <span>Retention field</span>
+      <select name="retention_state">
+        <option value="all" <%= filters.retention_state === 'all' ? 'selected' : '' %>>Any</option>
+        <option value="present" <%= filters.retention_state === 'present' ? 'selected' : '' %>>Retention present</option>
+        <option value="missing" <%= filters.retention_state === 'missing' ? 'selected' : '' %>>Retention missing</option>
+      </select>
+    </label>
+
+    <label>
+      <span>Retention period contains</span>
+      <input type="text" name="retention_search" value="<%= filters.retention_search %>" placeholder="e.g. 12 months" />
+    </label>
+
+    <label>
+      <span>Security measures field</span>
+      <select name="missing_security_measures">
+        <% booleanFilters.forEach((option) => { %>
+          <option value="<%= option.value %>" <%= filters.missing_security_measures === option.value ? 'selected' : '' %>><%= option.label %></option>
+        <% }) %>
+      </select>
+    </label>
+
+    <label>
+      <span>Sort by</span>
+      <select name="sort">
+        <option value="next_review_asc" <%= filters.sort === 'next_review_asc' ? 'selected' : '' %>>Next review date</option>
+        <option value="updated_desc" <%= filters.sort === 'updated_desc' ? 'selected' : '' %>>Last updated</option>
+        <option value="activity_name_asc" <%= filters.sort === 'activity_name_asc' ? 'selected' : '' %>>Activity name</option>
+        <option value="status_asc" <%= filters.sort === 'status_asc' ? 'selected' : '' %>>Status</option>
+      </select>
+    </label>
+
+    <div class="filter-actions span-2">
+      <button class="button" type="submit">Apply filters</button>
+      <a class="button ghost" href="/activities">Reset</a>
+    </div>
+  </form>
+</section>
+
+<section class="quick-links">
+  <a class="quick-link" href="/activities?overdue_review=yes">Overdue reviews</a>
+  <a class="quick-link" href="/activities?status=pending_legal_review">Pending legal review</a>
+  <a class="quick-link" href="/activities?ai_involvement=yes">AI-related activities</a>
+  <a class="quick-link" href="/activities?missing_links=missing_dpia">Missing DPIA</a>
+  <a class="quick-link" href="/activities?missing_links=missing_vendor_review">Missing vendor review</a>
+</section>
+
+<section class="panel">
+  <div class="register-toolbar">
+    <div>
+      <h2>Horizontal register view</h2>
+      <p><strong><%= resultCount %></strong> matching activities. The table now follows the Article 30 register structure and the PDF export mirrors it.</p>
+    </div>
+    <p class="register-toolbar-note">Scroll sideways on smaller screens to review the full register.</p>
+  </div>
+
+  <% if (activeFilters.length) { %>
+    <div class="active-filter-list">
+      <% activeFilters.forEach((filter) => { %>
+        <span class="filter-chip"><%= filter %></span>
+      <% }) %>
+    </div>
+  <% } %>
+
+  <div class="table-wrap">
+    <table class="register-table">
+      <thead>
+        <tr>
+          <th class="register-col-record">Record</th>
+          <th class="register-col-controller">Controller name and contact details</th>
+          <th class="register-col-joint-controller">Joint controller name and contact details</th>
+          <th class="register-col-representative">Controller representative name and contact details</th>
+          <th class="register-col-dpo">Data Protection Officer name and contact details</th>
+          <th class="register-col-purpose">Purposes of the processing</th>
+          <th class="register-col-subjects">Categories of data subjects</th>
+          <th class="register-col-personal-data">Categories of personal data</th>
+          <th class="register-col-recipients">Categories of recipients</th>
+          <th class="register-col-transfers">International transfers to third countries or international organisations</th>
+          <th class="register-col-safeguards">Appropriate safeguards for international transfers</th>
+          <th class="register-col-retention">Retention period / time limits for erasure</th>
+          <th class="register-col-security">Technical and organisational security measures</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (activities.length === 0) { %>
+          <tr>
+            <td colspan="13">No activities matched the selected filters.</td>
+          </tr>
+        <% } %>
+
+        <% activities.forEach((activity) => { %>
+          <tr>
+            <td class="register-col-record">
+              <a href="/activities/<%= activity.id %>"><%= activity.reference_code %></a>
+              <div><strong><%= activity.activity_name %></strong></div>
+              <div class="muted"><%= activity.department %> · <%= activity.product_service %></div>
+              <div class="line-clamp-3"><%= activity.short_description || 'No summary provided.' %></div>
+            </td>
+            <td class="register-col-controller">
+              <strong><%= activity.controller_name %></strong>
+              <div class="muted"><%= activity.controller_contact_details %></div>
+            </td>
+            <td class="register-col-joint-controller">
+              <% if (activity.joint_controller_name || activity.joint_controller_contact_details) { %>
+                <strong><%= activity.joint_controller_name || 'Joint controller' %></strong>
+                <div class="muted"><%= activity.joint_controller_contact_details %></div>
+              <% } else { %>
+                <span class="muted">Not applicable</span>
+              <% } %>
+            </td>
+            <td class="register-col-representative">
+              <% if (activity.controller_representative_name || activity.controller_representative_contact_details) { %>
+                <strong><%= activity.controller_representative_name || 'Representative' %></strong>
+                <div class="muted"><%= activity.controller_representative_contact_details %></div>
+              <% } else { %>
+                <span class="muted">Not applicable</span>
+              <% } %>
+            </td>
+            <td class="register-col-dpo">
+              <% if (activity.dpo_name || activity.dpo_contact_details) { %>
+                <strong><%= activity.dpo_name || 'DPO' %></strong>
+                <div class="muted"><%= activity.dpo_contact_details %></div>
+              <% } else { %>
+                <span class="muted">Not applicable</span>
+              <% } %>
+            </td>
+            <td class="register-col-purpose">
+              <div class="line-clamp-4"><%= activity.purpose_of_processing || 'Not set' %></div>
+            </td>
+            <td class="register-col-subjects"><%= activity.data_subject_categories.length ? activity.data_subject_categories.join(', ') : 'Not set' %></td>
+            <td class="register-col-personal-data"><%= activity.personal_data_categories.length ? activity.personal_data_categories.join(', ') : 'Not set' %></td>
+            <td class="register-col-recipients"><%= activity.recipient_categories.length ? activity.recipient_categories.join(', ') : 'Not set' %></td>
+            <td class="register-col-transfers">
+              <% if (activity.international_transfers) { %>
+                <div><strong>Yes</strong></div>
+                <div class="muted"><%= activity.transfer_countries.length ? activity.transfer_countries.join(', ') : 'Destination not specified' %></div>
+              <% } else { %>
+                <span class="muted">No transfers</span>
+              <% } %>
+            </td>
+            <td class="register-col-safeguards">
+              <div class="line-clamp-3"><%= activity.international_transfers ? (activity.transfer_mechanisms.length ? activity.transfer_mechanisms.join(', ') : 'Not documented') : 'Not applicable' %></div>
+            </td>
+            <td class="register-col-retention">
+              <div class="line-clamp-3"><%= activity.retention_period || 'Not set' %></div>
+            </td>
+            <td class="register-col-security">
+              <div class="line-clamp-4"><%= activity.security_measures || 'No security measures recorded.' %></div>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<%- include('partials/footer') %>
