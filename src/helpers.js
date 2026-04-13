@@ -631,7 +631,7 @@ export function buildRegisterPdf(activities, { title = 'Futurewhiz RoPA register
   });
 }
 
-export function buildActivityDetailPdf(activity, { title, subtitleLines = [], controllerProfile } = {}) {
+function buildVerticalFieldSheetPdf(rows, { title, subtitleLines = [] } = {}) {
   const pageWidth = 595;
   const pageHeight = 842;
   const marginX = 34;
@@ -646,13 +646,6 @@ export function buildActivityDetailPdf(activity, { title, subtitleLines = [], co
   const valueFontSize = 8.8;
   const lineHeight = 10;
   const pageStreams = [];
-  const rows = [
-    { label: 'Controller identification', value: activityControllerContactValue(activity, controllerProfile) },
-    ...ACTIVITY_FIELD_META.map((field) => ({
-      label: field.label,
-      value: displayValue(field, activity[field.key])
-    }))
-  ];
   const wrappedSubtitleLines = subtitleLines.flatMap((line) => wrapPdfText(line, 78));
   let rowIndex = 0;
   let pageIndex = 0;
@@ -731,6 +724,32 @@ export function buildActivityDetailPdf(activity, { title, subtitleLines = [], co
     footerBuilder: (index, count) =>
       `0.25 g\nBT /F1 8 Tf ${marginX} 16 Td (${pdfEscape(`Page ${index + 1} of ${count}`)}) Tj ET`
   });
+}
+
+export function buildActivityDetailPdf(activity, { title, subtitleLines = [], controllerProfile } = {}) {
+  const rows = [
+    { label: 'Controller identification', value: activityControllerContactValue(activity, controllerProfile) },
+    ...ACTIVITY_FIELD_META.map((field) => ({
+      label: field.label,
+      value: displayValue(field, activity[field.key])
+    }))
+  ];
+
+  return buildVerticalFieldSheetPdf(rows, { title, subtitleLines });
+}
+
+export function buildCompanyDetailsPdf(controllerProfile, { title = 'Company details', subtitleLines = [] } = {}) {
+  const rows = [
+    { label: 'Company name', value: controllerProfile?.company_name || 'Not set' },
+    { label: 'Contact', value: controllerProfile?.contact_name || 'Not set' },
+    { label: 'Address', value: controllerProfile?.address || 'Not set' },
+    { label: 'Phone number', value: controllerProfile?.phone_number || 'Not set' },
+    { label: 'E-mail', value: controllerProfile?.email || 'Not set' },
+    { label: 'Chamber of commerce', value: controllerProfile?.chamber_of_commerce || 'Not set' },
+    { label: 'Last updated', value: controllerProfile?.updated_at || controllerProfile?.created_at || 'Not set' }
+  ];
+
+  return buildVerticalFieldSheetPdf(rows, { title, subtitleLines });
 }
 
 export function activityPdfLines(activity, attachments = [], changes = [], controllerProfile = null) {

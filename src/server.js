@@ -22,6 +22,7 @@ import {
   boolFromInput,
   buildActivityCsv,
   buildActivityDetailPdf,
+  buildCompanyDetailsPdf,
   buildActivityExcelXml,
   buildRegisterPdf,
   displayValue,
@@ -1088,6 +1089,25 @@ app.post(
 
     setFlash(req, 'success', 'Controller identification updated.');
     return res.redirect('/controller-identification');
+  })
+);
+
+app.get(
+  '/controller-identification/export.pdf',
+  ensureAuth,
+  asyncHandler(async (req, res) => {
+    const controllerProfile = await getControllerProfile();
+    const pdf = buildCompanyDetailsPdf(controllerProfile, {
+      title: 'Company details',
+      subtitleLines: [
+        `Company: ${controllerProfile?.company_name || 'Not set'}`,
+        `Exported: ${formatDateTime(nowIso(), APP_TIMEZONE)}`
+      ]
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="futurewhiz-company-details.pdf"');
+    return res.send(pdf);
   })
 );
 
