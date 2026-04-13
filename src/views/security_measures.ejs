@@ -12,6 +12,28 @@
   </div>
 </section>
 
+<section class="panel compliance-sheet security-baseline-sheet">
+  <div class="section-heading">
+    <div>
+      <h2>Futurewhiz baseline security measures</h2>
+      <p>Technical and organizational measures from the original RoPA.</p>
+    </div>
+  </div>
+
+  <div class="security-baseline-grid">
+    <% securityBaselineSections.forEach((section) => { %>
+      <article class="security-baseline-card">
+        <h3><%= section.title %></h3>
+        <ul class="security-baseline-list">
+          <% section.items.forEach((item) => { %>
+            <li><%= item %></li>
+          <% }) %>
+        </ul>
+      </article>
+    <% }) %>
+  </div>
+</section>
+
 <section class="panel search-panel <%= activeFilters.length ? 'is-open' : '' %>" data-search-panel <%= activeFilters.length ? '' : 'hidden' %>>
   <div class="register-toolbar">
     <div>

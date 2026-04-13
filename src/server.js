@@ -14,6 +14,7 @@ import {
   FUTUREWHIZ_ROLE_OPTIONS,
   REQUIRED_ACTIVITY_FIELDS,
   REVIEW_INTERVAL_OPTIONS,
+  SECURITY_BASELINE_SECTIONS,
   ROLE_OPTIONS,
   STATUS_OPTIONS
 } from './constants.js';
@@ -1229,6 +1230,7 @@ app.get(
     res.render('security_measures', {
       pageTitle: 'Security measures',
       activities: rows.map(decorateActivity),
+      securityBaselineSections: SECURITY_BASELINE_SECTIONS,
       activeFilters: summarizeActivityFilters(filters),
       filters,
       exportQuery: new URLSearchParams(filters).toString(),

@@ -57,6 +57,49 @@ export const FUTUREWHIZ_ROLE_OPTIONS = [
   { value: 'processor', label: 'Futurewhiz acts as processor' }
 ];
 
+export const SECURITY_BASELINE_SECTIONS = [
+  {
+    title: 'Password policy',
+    items: [
+      'Use LastPass for storing passwords (enable 2-step verification).',
+      'Use safe passwords.',
+      'Periodically change passwords.',
+      'Change shared passwords when someone leaves the company.',
+      'Apply a need-to-know access policy.'
+    ]
+  },
+  {
+    title: 'Laptop security',
+    items: [
+      'Enable Find My Mac on your laptop.',
+      'Enable FileVault on your laptop.',
+      'Enable Firewall on your laptop.',
+      'Lock your screen whenever you are not around your laptop.',
+      'When not taking your laptop home, always store it in the safe.',
+      'Periodically review the devices where your Google account is logged in and remove devices you no longer use.'
+    ]
+  },
+  {
+    title: 'Office security',
+    items: [
+      'When leaving the office in the evening, do not leave anybody behind alone.',
+      'Lock the door with your key, do not just close it.'
+    ]
+  },
+  {
+    title: 'Data security',
+    items: [
+      'Delete personal data that you do not use anymore.',
+      'Store all data in the cloud and avoid local data or USB sticks.',
+      'Anonymize data as much as possible.',
+      'Review how long data is stored and whether that remains necessary.',
+      'Think before sharing privacy-sensitive data over email, Google spreadsheets, or Dropbox.',
+      'When starting a contract or agreement with an external party, include Legal for the privacy and security part.',
+      'Know what to do in case of a potential data breach and the 72-hour deadline.'
+    ]
+  }
+];
+
 export const CONTROLLER_PROFILE_DEFAULTS = {
   company_name: 'Futurewhiz B.V.',
   contact_name: 'Futurewhiz Legal & Privacy Team',
