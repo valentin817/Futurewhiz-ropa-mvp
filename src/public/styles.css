@@ -835,6 +835,63 @@ th {
   padding: 18px;
 }
 
+.activity-review-sheet {
+  padding: 28px;
+}
+
+.sheet-section {
+  display: grid;
+  gap: 18px;
+}
+
+.sheet-section-intro {
+  gap: 22px;
+}
+
+.sheet-section-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sheet-section-header p {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.activity-sheet-meta {
+  padding: 18px 20px;
+  border: 1px solid rgba(216, 207, 191, 0.74);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.sheet-detail-list {
+  gap: 18px 28px;
+}
+
+.sheet-detail-list dd {
+  font-weight: 500;
+}
+
+.sheet-divider {
+  height: 1px;
+  background: rgba(216, 207, 191, 0.82);
+  margin: 24px 0;
+}
+
+.security-section {
+  padding: 22px;
+  border: 1px solid rgba(183, 114, 52, 0.24);
+  border-radius: 18px;
+  background: rgba(255, 251, 246, 0.82);
+}
+
+.security-sheet-copy {
+  font-size: 0.98rem;
+}
+
 .controller-preview-header {
   display: flex;
   align-items: center;
@@ -1179,6 +1236,11 @@ th {
   .saved-view-strip,
   .sheet-row,
   .mini-detail-list {
+    grid-template-columns: 1fr;
+  }
+
+  .sheet-section-header {
+    display: grid;
     grid-template-columns: 1fr;
   }
 
