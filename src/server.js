@@ -1217,11 +1217,20 @@ app.get(
     const attachments = await db
       .prepare('SELECT * FROM activity_attachments WHERE activity_id = ? ORDER BY uploaded_at DESC')
       .all(activity.id);
+    const attachmentTypeLabels = Object.fromEntries(
+      ATTACHMENT_TYPE_OPTIONS.map((option) => [option.value, option.label])
+    );
+    const attachmentGroups = ATTACHMENT_TYPE_OPTIONS.reduce((groups, option) => {
+      groups[option.value] = attachments.filter((attachment) => attachment.attachment_type === option.value);
+      return groups;
+    }, {});
 
     res.render('activity_detail', {
       pageTitle: `${activity.reference_code} · ${activity.activity_name}`,
       activity,
       attachments,
+      attachmentGroups,
+      attachmentTypeLabels,
       canEdit: canEditActivity(req.session.user, activity)
     });
   })

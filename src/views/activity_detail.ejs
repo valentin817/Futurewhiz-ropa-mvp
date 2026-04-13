@@ -108,13 +108,45 @@
   </article>
 
   <article class="panel">
-    <h2>Linked compliance items</h2>
+    <div class="section-heading">
+      <div>
+        <h2>Linked compliance items</h2>
+      </div>
+      <% if (canEdit) { %>
+        <details class="attachment-upload-toggle">
+          <summary><span class="button secondary">Attach file</span></summary>
+          <form class="inline-form-card attachment-upload-card" method="post" action="/activities/<%= activity.id %>/attachments" enctype="multipart/form-data">
+            <select name="attachment_type">
+              <% attachmentTypeOptions.forEach((option) => { %>
+                <option value="<%= option.value %>"><%= option.label %></option>
+              <% }) %>
+            </select>
+            <input type="text" name="label" placeholder="Optional label" />
+            <input type="file" name="files" multiple />
+            <button class="button secondary" type="submit">Upload</button>
+          </form>
+        </details>
+      <% } %>
+    </div>
     <dl class="detail-list">
       <div>
         <dt>Vendor review / DPA</dt>
         <dd>
           <%= activity.vendor_review_ref || 'Missing' %>
           <% if (activity.vendor_review_url) { %><a class="inline-link" href="<%= activity.vendor_review_url %>">Open</a><% } %>
+          <% if (attachmentGroups.vendor_file.length) { %>
+            <div class="attachment-list compliance-attachment-list">
+              <% attachmentGroups.vendor_file.forEach((attachment) => { %>
+                <div class="attachment-item">
+                  <div>
+                    <strong><%= attachment.label || attachment.original_name %></strong>
+                    <div class="muted">uploaded <%= formatDateTime(attachment.uploaded_at) %></div>
+                  </div>
+                  <a class="button ghost" href="/attachments/<%= attachment.id %>/download">Download</a>
+                </div>
+              <% }) %>
+            </div>
+          <% } %>
         </dd>
       </div>
       <div>
@@ -122,6 +154,19 @@
         <dd>
           <%= activity.dpia_ref || 'Missing' %>
           <% if (activity.dpia_url) { %><a class="inline-link" href="<%= activity.dpia_url %>">Open</a><% } %>
+          <% if (attachmentGroups.dpia.length) { %>
+            <div class="attachment-list compliance-attachment-list">
+              <% attachmentGroups.dpia.forEach((attachment) => { %>
+                <div class="attachment-item">
+                  <div>
+                    <strong><%= attachment.label || attachment.original_name %></strong>
+                    <div class="muted">uploaded <%= formatDateTime(attachment.uploaded_at) %></div>
+                  </div>
+                  <a class="button ghost" href="/attachments/<%= attachment.id %>/download">Download</a>
+                </div>
+              <% }) %>
+            </div>
+          <% } %>
         </dd>
       </div>
       <div>
@@ -129,6 +174,19 @@
         <dd>
           <%= activity.lia_ref || 'Not linked' %>
           <% if (activity.lia_url) { %><a class="inline-link" href="<%= activity.lia_url %>">Open</a><% } %>
+          <% if (attachmentGroups.lia.length) { %>
+            <div class="attachment-list compliance-attachment-list">
+              <% attachmentGroups.lia.forEach((attachment) => { %>
+                <div class="attachment-item">
+                  <div>
+                    <strong><%= attachment.label || attachment.original_name %></strong>
+                    <div class="muted">uploaded <%= formatDateTime(attachment.uploaded_at) %></div>
+                  </div>
+                  <a class="button ghost" href="/attachments/<%= attachment.id %>/download">Download</a>
+                </div>
+              <% }) %>
+            </div>
+          <% } %>
         </dd>
       </div>
       <div>
@@ -136,6 +194,19 @@
         <dd>
           <%= activity.privacy_notice_ref || 'Not linked' %>
           <% if (activity.privacy_notice_url) { %><a class="inline-link" href="<%= activity.privacy_notice_url %>">Open</a><% } %>
+          <% if (attachmentGroups.privacy_notice.length) { %>
+            <div class="attachment-list compliance-attachment-list">
+              <% attachmentGroups.privacy_notice.forEach((attachment) => { %>
+                <div class="attachment-item">
+                  <div>
+                    <strong><%= attachment.label || attachment.original_name %></strong>
+                    <div class="muted">uploaded <%= formatDateTime(attachment.uploaded_at) %></div>
+                  </div>
+                  <a class="button ghost" href="/attachments/<%= attachment.id %>/download">Download</a>
+                </div>
+              <% }) %>
+            </div>
+          <% } %>
         </dd>
       </div>
       <div>
@@ -143,6 +214,19 @@
         <dd>
           <%= activity.security_review_ref || 'Missing' %>
           <% if (activity.security_review_url) { %><a class="inline-link" href="<%= activity.security_review_url %>">Open</a><% } %>
+          <% if (attachmentGroups.security_review.length) { %>
+            <div class="attachment-list compliance-attachment-list">
+              <% attachmentGroups.security_review.forEach((attachment) => { %>
+                <div class="attachment-item">
+                  <div>
+                    <strong><%= attachment.label || attachment.original_name %></strong>
+                    <div class="muted">uploaded <%= formatDateTime(attachment.uploaded_at) %></div>
+                  </div>
+                  <a class="button ghost" href="/attachments/<%= attachment.id %>/download">Download</a>
+                </div>
+              <% }) %>
+            </div>
+          <% } %>
         </dd>
       </div>
       <div>
@@ -150,51 +234,42 @@
         <dd>
           <%= activity.ai_tool_review_ref || 'Not linked' %>
           <% if (activity.ai_tool_review_url) { %><a class="inline-link" href="<%= activity.ai_tool_review_url %>">Open</a><% } %>
+          <% if (attachmentGroups.ai_tool_review.length) { %>
+            <div class="attachment-list compliance-attachment-list">
+              <% attachmentGroups.ai_tool_review.forEach((attachment) => { %>
+                <div class="attachment-item">
+                  <div>
+                    <strong><%= attachment.label || attachment.original_name %></strong>
+                    <div class="muted">uploaded <%= formatDateTime(attachment.uploaded_at) %></div>
+                  </div>
+                  <a class="button ghost" href="/attachments/<%= attachment.id %>/download">Download</a>
+                </div>
+              <% }) %>
+            </div>
+          <% } %>
+        </dd>
+      </div>
+      <div>
+        <dt><%= attachmentTypeLabels.other %></dt>
+        <dd>
+          <% if (attachmentGroups.other.length === 0) { %>
+            Not linked
+          <% } else { %>
+            <div class="attachment-list compliance-attachment-list">
+              <% attachmentGroups.other.forEach((attachment) => { %>
+                <div class="attachment-item">
+                  <div>
+                    <strong><%= attachment.label || attachment.original_name %></strong>
+                    <div class="muted">uploaded <%= formatDateTime(attachment.uploaded_at) %></div>
+                  </div>
+                  <a class="button ghost" href="/attachments/<%= attachment.id %>/download">Download</a>
+                </div>
+              <% }) %>
+            </div>
+          <% } %>
         </dd>
       </div>
     </dl>
-  </article>
-</section>
-
-<section class="detail-grid">
-  <article class="panel">
-    <h2>Supporting files</h2>
-    <% if (canEdit) { %>
-      <form class="stack" method="post" action="/activities/<%= activity.id %>/attachments" enctype="multipart/form-data">
-        <label>
-          <span>Attachment type</span>
-          <select name="attachment_type">
-            <% attachmentTypeOptions.forEach((option) => { %>
-              <option value="<%= option.value %>"><%= option.label %></option>
-            <% }) %>
-          </select>
-        </label>
-        <label>
-          <span>Label</span>
-          <input type="text" name="label" placeholder="Optional label" />
-        </label>
-        <label>
-          <span>Files</span>
-          <input type="file" name="files" multiple />
-        </label>
-        <button class="button secondary" type="submit">Upload attachment</button>
-      </form>
-    <% } %>
-
-    <div class="attachment-list">
-      <% if (attachments.length === 0) { %>
-        <p class="muted">No attachments uploaded yet.</p>
-      <% } %>
-      <% attachments.forEach((attachment) => { %>
-        <div class="attachment-item">
-          <div>
-            <strong><%= attachment.label || attachment.original_name %></strong>
-            <div class="muted"><%= attachment.attachment_type %> · uploaded <%= formatDateTime(attachment.uploaded_at) %></div>
-          </div>
-          <a class="button ghost" href="/attachments/<%= attachment.id %>/download">Download</a>
-        </div>
-      <% }) %>
-    </div>
   </article>
 </section>
 

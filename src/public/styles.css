@@ -994,6 +994,32 @@ th {
   border: 1px solid rgba(216, 207, 191, 0.72);
 }
 
+.attachment-upload-toggle {
+  position: relative;
+}
+
+.attachment-upload-toggle summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.attachment-upload-toggle summary::-webkit-details-marker {
+  display: none;
+}
+
+.attachment-upload-card {
+  margin-top: 14px;
+  width: min(100%, 760px);
+}
+
+.compliance-attachment-list {
+  margin-top: 14px;
+}
+
+.compliance-attachment-list .attachment-item {
+  padding: 12px 14px;
+}
+
 .inline-form-card {
   align-items: center;
   flex-wrap: wrap;
