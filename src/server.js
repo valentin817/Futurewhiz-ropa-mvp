@@ -14,7 +14,6 @@ import {
   FUTUREWHIZ_ROLE_OPTIONS,
   REQUIRED_ACTIVITY_FIELDS,
   REVIEW_INTERVAL_OPTIONS,
-  SECURITY_BASELINE_SECTIONS,
   ROLE_OPTIONS,
   STATUS_OPTIONS
 } from './constants.js';
@@ -501,6 +500,73 @@ async function fetchFiltersSupportData() {
     products: productsRows.map((row) => row.product_service),
     vendors
   };
+}
+
+function buildSecurityMeasureFilters(query) {
+  return {
+    q: String(query.q || '').trim(),
+    category: String(query.category || '').trim(),
+    sort: String(query.sort || 'category_asc')
+  };
+}
+
+function buildSecurityMeasureWhere(filters) {
+  const clauses = ['1 = 1'];
+  const params = [];
+
+  if (filters.q) {
+    clauses.push('(title LIKE ? OR description LIKE ? OR category LIKE ?)');
+    const term = `%${filters.q}%`;
+    params.push(term, term, term);
+  }
+
+  if (filters.category) {
+    clauses.push('category = ?');
+    params.push(filters.category);
+  }
+
+  const orderBy = {
+    category_asc: 'category ASC, sort_order ASC, title ASC',
+    title_asc: 'title ASC',
+    updated_desc: 'updated_at DESC, title ASC'
+  }[filters.sort] || 'category ASC, sort_order ASC, title ASC';
+
+  return { whereSql: clauses.join(' AND '), params, orderBy };
+}
+
+function summarizeSecurityMeasureFilters(filters) {
+  const summaries = [];
+  if (filters.q) summaries.push(`Keyword: ${filters.q}`);
+  if (filters.category) summaries.push(`Category: ${filters.category}`);
+  if (filters.sort && filters.sort !== 'category_asc') {
+    const labels = {
+      title_asc: 'Title',
+      updated_desc: 'Last updated'
+    };
+    summaries.push(`Sorted by: ${labels[filters.sort] || filters.sort}`);
+  }
+  return summaries;
+}
+
+async function renderSecurityMeasureLibrary(req, res, options = {}) {
+  const filters = options.filters || buildSecurityMeasureFilters(req.query);
+  const { whereSql, params, orderBy } = buildSecurityMeasureWhere(filters);
+  const [measures, categoryRows] = await Promise.all([
+    db.prepare(`SELECT * FROM security_measure_library WHERE ${whereSql} ORDER BY ${orderBy}`).all(params),
+    db.prepare('SELECT DISTINCT category FROM security_measure_library ORDER BY category ASC').all()
+  ]);
+
+  return res.render('security_measures', {
+    pageTitle: 'Security measures',
+    measures,
+    activeFilters: summarizeSecurityMeasureFilters(filters),
+    filters,
+    exportQuery: new URLSearchParams(filters).toString(),
+    categoryOptions: categoryRows.map((row) => row.category),
+    formErrors: options.formErrors || [],
+    formValues: options.formValues || { category: '', title: '', description: '' },
+    showNewForm: Boolean(options.showNewForm)
+  });
 }
 
 async function writeChangeLog(activityId, actor, eventType, fieldName, oldValue, newValue, reason) {
@@ -1218,29 +1284,58 @@ app.get(
 app.get(
   '/security-measures',
   ensureAuth,
-  asyncHandler(async (req, res) => {
-    const filters = buildActivityFilters(req.query);
-    const { whereSql, params, orderBy } = buildActivityWhere(filters);
-    const [rows, supportData, vocab] = await Promise.all([
-      db.prepare(`SELECT * FROM activities WHERE ${whereSql} ORDER BY ${orderBy}`).all(params),
-      fetchFiltersSupportData(),
-      getVocabBundle()
-    ]);
+  asyncHandler(async (req, res) => renderSecurityMeasureLibrary(req, res))
+);
 
-    res.render('security_measures', {
-      pageTitle: 'Security measures',
-      activities: rows.map(decorateActivity),
-      securityBaselineSections: SECURITY_BASELINE_SECTIONS,
-      activeFilters: summarizeActivityFilters(filters),
-      filters,
-      exportQuery: new URLSearchParams(filters).toString(),
-      filterOptions: {
-        ...supportData,
-        departments: vocab.departments.map((item) => item.label)
-      },
-      booleanFilters: BOOLEAN_FILTERS,
-      resultCount: rows.length
-    });
+app.post(
+  '/security-measures',
+  ensureAuth,
+  asyncHandler(async (req, res) => {
+    const formValues = {
+      category: String(req.body.category || '').trim(),
+      title: String(req.body.title || '').trim(),
+      description: String(req.body.description || '').trim()
+    };
+    const filters = buildSecurityMeasureFilters(req.query);
+    const errors = [];
+
+    if (!formValues.category) errors.push('Category is required.');
+    if (!formValues.title) errors.push('Title is required.');
+    if (!formValues.description) errors.push('Description is required.');
+
+    if (errors.length > 0) {
+      return renderSecurityMeasureLibrary(req, res.status(422), {
+        filters,
+        formErrors: errors,
+        formValues,
+        showNewForm: true
+      });
+    }
+
+    const sortRow = await db
+      .prepare('SELECT COALESCE(MAX(sort_order), 0) + 1 AS next_sort_order FROM security_measure_library WHERE category = ?')
+      .get(formValues.category);
+
+    await db
+      .prepare(
+        `
+          INSERT INTO security_measure_library (
+            category, title, description, created_by_email, sort_order, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        `
+      )
+      .run(
+        formValues.category,
+        formValues.title,
+        formValues.description,
+        req.session.user.email,
+        sortRow.next_sort_order,
+        nowIso(),
+        nowIso()
+      );
+
+    setFlash(req, 'success', 'Security measure added.');
+    return res.redirect('/security-measures');
   })
 );
 
@@ -1564,13 +1659,10 @@ app.get(
   '/exports/security-measures.pdf',
   ensureAuth,
   asyncHandler(async (req, res) => {
-    const filters = buildActivityFilters(req.query);
-    const { whereSql, params, orderBy } = buildActivityWhere(filters);
-    const activities = (await db.prepare(`SELECT * FROM activities WHERE ${whereSql} ORDER BY ${orderBy}`).all(params)).map(
-      decorateActivity
-    );
-
-    const pdf = buildSecurityRegisterPdf(activities);
+    const filters = buildSecurityMeasureFilters(req.query);
+    const { whereSql, params, orderBy } = buildSecurityMeasureWhere(filters);
+    const measures = await db.prepare(`SELECT * FROM security_measure_library WHERE ${whereSql} ORDER BY ${orderBy}`).all(params);
+    const pdf = buildSecurityRegisterPdf(measures);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="futurewhiz-security-measures-register.pdf"');
     return res.send(pdf);

@@ -1,7 +1,7 @@
 import sqlite3 from 'sqlite3';
 import fs from 'fs';
 import path from 'path';
-import { CONTROLLER_PROFILE_DEFAULTS, CONTROLLED_VOCABULARY_SEEDS, STATUS_OPTIONS } from './constants.js';
+import { CONTROLLER_PROFILE_DEFAULTS, CONTROLLED_VOCABULARY_SEEDS, SECURITY_MEASURE_SEEDS, STATUS_OPTIONS } from './constants.js';
 import { addMonths, nowIso, stringifyJsonArray, todayIsoDate } from './helpers.js';
 
 const DB_PATH = path.resolve(process.cwd(), process.env.DB_PATH || 'data/ropa.db');
@@ -142,6 +142,24 @@ async function ensureControllerProfile(database) {
     nowIso(),
     nowIso()
   );
+}
+
+async function ensureSecurityMeasureLibrary(database) {
+  const existing = await compileStatement(database, 'SELECT COUNT(*) AS count FROM security_measure_library').get();
+  if (existing.count > 0) return;
+
+  const insert = compileStatement(
+    database,
+    `
+      INSERT INTO security_measure_library (
+        category, title, description, created_by_email, sort_order, created_at, updated_at
+      ) VALUES (?, ?, ?, 'seed@futurewhiz.com', ?, ?, ?)
+    `
+  );
+
+  for (const [index, item] of SECURITY_MEASURE_SEEDS.entries()) {
+    await insert.run(item.category, item.title, item.description, index + 1, nowIso(), nowIso());
+  }
 }
 
 async function seedActivities(database) {
@@ -914,6 +932,17 @@ export async function initDb() {
         FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE
       );
 
+      CREATE TABLE IF NOT EXISTS security_measure_library (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        category TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        created_by_email TEXT NOT NULL,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
       CREATE INDEX IF NOT EXISTS idx_vocab_group ON vocabulary_values(group_key, active, sort_order);
       CREATE INDEX IF NOT EXISTS idx_users_role ON users(role, active);
       CREATE INDEX IF NOT EXISTS idx_activities_status ON activities(status);
@@ -925,6 +954,7 @@ export async function initDb() {
       CREATE INDEX IF NOT EXISTS idx_reminders_activity ON activity_reminders(activity_id, scheduled_for);
       CREATE INDEX IF NOT EXISTS idx_intake_created ON intake_requests(created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_attachments_activity ON activity_attachments(activity_id, uploaded_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_security_measure_category ON security_measure_library(category, sort_order, title);
     `
   );
 
@@ -932,6 +962,7 @@ export async function initDb() {
   await seedVocabulary(db);
   await seedUsers(db);
   await ensureControllerProfile(db);
+  await ensureSecurityMeasureLibrary(db);
   await seedActivities(db);
 
   return db;

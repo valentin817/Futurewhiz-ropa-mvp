@@ -57,46 +57,106 @@ export const FUTUREWHIZ_ROLE_OPTIONS = [
   { value: 'processor', label: 'Futurewhiz acts as processor' }
 ];
 
-export const SECURITY_BASELINE_SECTIONS = [
+export const SECURITY_MEASURE_SEEDS = [
   {
-    title: 'Password policy',
-    items: [
-      'Use LastPass for storing passwords (enable 2-step verification).',
-      'Use safe passwords.',
-      'Periodically change passwords.',
-      'Change shared passwords when someone leaves the company.',
-      'Apply a need-to-know access policy.'
-    ]
+    category: 'Password policy',
+    title: 'Use LastPass for password storage',
+    description: 'Store passwords in LastPass and enable 2-step verification for the vault.'
   },
   {
-    title: 'Laptop security',
-    items: [
-      'Enable Find My Mac on your laptop.',
-      'Enable FileVault on your laptop.',
-      'Enable Firewall on your laptop.',
-      'Lock your screen whenever you are not around your laptop.',
-      'When not taking your laptop home, always store it in the safe.',
-      'Periodically review the devices where your Google account is logged in and remove devices you no longer use.'
-    ]
+    category: 'Password policy',
+    title: 'Use safe passwords',
+    description: 'Use strong passwords and avoid weak or guessable examples such as 1000quizzen.'
   },
   {
-    title: 'Office security',
-    items: [
-      'When leaving the office in the evening, do not leave anybody behind alone.',
-      'Lock the door with your key, do not just close it.'
-    ]
+    category: 'Password policy',
+    title: 'Change passwords periodically',
+    description: 'Review and rotate passwords on a periodic basis where appropriate.'
   },
   {
-    title: 'Data security',
-    items: [
-      'Delete personal data that you do not use anymore.',
-      'Store all data in the cloud and avoid local data or USB sticks.',
-      'Anonymize data as much as possible.',
-      'Review how long data is stored and whether that remains necessary.',
-      'Think before sharing privacy-sensitive data over email, Google spreadsheets, or Dropbox.',
-      'When starting a contract or agreement with an external party, include Legal for the privacy and security part.',
-      'Know what to do in case of a potential data breach and the 72-hour deadline.'
-    ]
+    category: 'Password policy',
+    title: 'Rotate shared passwords when colleagues leave',
+    description: 'Change shared passwords whenever someone leaves the company.'
+  },
+  {
+    category: 'Password policy',
+    title: 'Apply need-to-know access',
+    description: 'Grant access only where someone genuinely needs it.'
+  },
+  {
+    category: 'Laptop security',
+    title: 'Enable Find My Mac',
+    description: 'Enable Find My Mac on your laptop so devices can be located if lost.'
+  },
+  {
+    category: 'Laptop security',
+    title: 'Enable FileVault',
+    description: 'Enable FileVault on your laptop to encrypt the device.'
+  },
+  {
+    category: 'Laptop security',
+    title: 'Enable firewall',
+    description: 'Enable the device firewall through system security settings.'
+  },
+  {
+    category: 'Laptop security',
+    title: 'Lock your screen when away',
+    description: 'Whenever you are not around your laptop, lock the screen.'
+  },
+  {
+    category: 'Laptop security',
+    title: 'Store unattended laptops securely',
+    description: 'When not taking your laptop home, store it in the safe.'
+  },
+  {
+    category: 'Laptop security',
+    title: 'Review Google account devices',
+    description: 'Periodically review which devices are logged into your Google account and remove devices you no longer use.'
+  },
+  {
+    category: 'Office security',
+    title: 'Do not leave one person behind alone',
+    description: 'When leaving the office in the evening, do not leave anybody behind alone.'
+  },
+  {
+    category: 'Office security',
+    title: 'Lock the office door properly',
+    description: 'Lock the door with your key instead of just closing it.'
+  },
+  {
+    category: 'Data security',
+    title: 'Delete unused personal data',
+    description: 'Delete personal data that is no longer needed.'
+  },
+  {
+    category: 'Data security',
+    title: 'Store data in the cloud only',
+    description: 'Store all data in the cloud and avoid local data storage or USB sticks.'
+  },
+  {
+    category: 'Data security',
+    title: 'Anonymize data where possible',
+    description: 'Anonymize data as much as possible.'
+  },
+  {
+    category: 'Data security',
+    title: 'Review storage periods for necessity',
+    description: 'Check how long data is stored and whether that remains necessary.'
+  },
+  {
+    category: 'Data security',
+    title: 'Think before sharing sensitive data',
+    description: 'Be careful when sharing privacy-sensitive data over email, Google spreadsheets, or Dropbox.'
+  },
+  {
+    category: 'Data security',
+    title: 'Include Legal in external agreements',
+    description: 'When starting a contract or agreement with an external party, include Legal for the privacy and security aspects.'
+  },
+  {
+    category: 'Data security',
+    title: 'Know the data breach response',
+    description: 'Know what to do in case of a potential data breach, including the 72-hour reporting deadline.'
   }
 ];
 

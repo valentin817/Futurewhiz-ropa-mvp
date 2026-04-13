@@ -779,15 +779,12 @@ export function buildSecurityDetailPdf(activity, { title, subtitleLines = [] } =
   return buildVerticalFieldSheetPdf(rows, { title, subtitleLines });
 }
 
-export function buildSecurityRegisterPdf(activities) {
+export function buildSecurityRegisterPdf(measures) {
   const columns = [
-    { label: 'Activity', pdfWidth: 135, value: (activity) => [activity.activity_name, activity.short_description].filter(Boolean).join(' | ') },
-    { label: 'Department', pdfWidth: 80, value: (activity) => activity.department || 'Not set' },
-    { label: 'Product', pdfWidth: 78, value: (activity) => activity.product_service || 'Not set' },
-    { label: 'Security measures', pdfWidth: 180, value: (activity) => activity.security_measures || 'Missing security measures' },
-    { label: 'Status', pdfWidth: 72, value: (activity) => activity.status || 'Not set' },
-    { label: 'Next review', pdfWidth: 78, value: (activity) => activity.next_review_date || 'Not set' },
-    { label: 'Owner', pdfWidth: 78, value: (activity) => activity.business_owner_name || 'Not set' }
+    { label: 'Category', pdfWidth: 120, value: (measure) => measure.category || 'Not set' },
+    { label: 'Title', pdfWidth: 170, value: (measure) => measure.title || 'Not set' },
+    { label: 'Description', pdfWidth: 280, value: (measure) => measure.description || 'Not set' },
+    { label: 'Last updated', pdfWidth: 95, value: (measure) => measure.updated_at || measure.created_at || 'Not set' }
   ];
   const pageWidth = 760;
   const pageHeight = 595;
@@ -796,7 +793,7 @@ export function buildSecurityRegisterPdf(activities) {
   const marginBottom = 24;
   const tableWidth = columns.reduce((sum, column) => sum + column.pdfWidth, 0);
   const title = 'Security measures register';
-  const subtitleLines = [`Records exported: ${activities.length}`];
+  const subtitleLines = [`Records exported: ${measures.length}`];
   const wrappedSubtitleLines = subtitleLines.flatMap((line) => wrapPdfText(line, 110));
   const headerHeight = 24;
   const rowLineHeight = 8;
@@ -809,7 +806,7 @@ export function buildSecurityRegisterPdf(activities) {
   let rowIndex = 0;
   let pageIndex = 0;
 
-  while (rowIndex < activities.length || (activities.length === 0 && pageIndex === 0)) {
+  while (rowIndex < measures.length || (measures.length === 0 && pageIndex === 0)) {
     const commands = [];
     const titleBandHeight = pageIndex === 0 ? 40 : 24;
     const titleTop = pageHeight - marginTop;
@@ -833,19 +830,19 @@ export function buildSecurityRegisterPdf(activities) {
     });
     cursorY -= headerHeight;
 
-    if (activities.length === 0) {
+    if (measures.length === 0) {
       commands.push('0.82 0.82 0.82 RG');
       commands.push(`${marginX} ${cursorY - 28} ${tableWidth} 28 re S`);
-      commands.push(pdfTextBlock(marginX + 4, cursorY - 12, ['No activities matched the selected filters.'], rowFontSize, rowLineHeight, { textColor: '0 g' }));
+      commands.push(pdfTextBlock(marginX + 4, cursorY - 12, ['No security measures matched the selected filters.'], rowFontSize, rowLineHeight, { textColor: '0 g' }));
       pageStreams.push(commands.filter(Boolean).join('\n'));
       break;
     }
 
-    while (rowIndex < activities.length) {
-      const activity = activities[rowIndex];
+    while (rowIndex < measures.length) {
+      const measure = measures[rowIndex];
       const cellMeta = columns.map((column) => {
         const maxChars = Math.max(4, Math.floor((column.pdfWidth - rowPaddingX * 2) / 3.8));
-        const lines = clampPdfLines(wrapPdfText(column.value(activity) || '-', maxChars), maxCellLines, maxChars);
+        const lines = clampPdfLines(wrapPdfText(column.value(measure) || '-', maxChars), maxCellLines, maxChars);
         return { width: column.pdfWidth, lines };
       });
       const rowHeight = Math.max(24, Math.max(...cellMeta.map((cell) => cell.lines.length)) * rowLineHeight + rowPaddingY * 2);
