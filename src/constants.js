@@ -60,103 +60,103 @@ export const FUTUREWHIZ_ROLE_OPTIONS = [
 export const SECURITY_MEASURE_SEEDS = [
   {
     category: 'Password policy',
-    title: 'Use LastPass for password storage',
-    description: 'Store passwords in LastPass and enable 2-step verification for the vault.'
+    title: 'Use LastPass for storing passwords (enable 2-step verification)',
+    description: ''
   },
   {
     category: 'Password policy',
-    title: 'Use safe passwords',
-    description: 'Use strong passwords and avoid weak or guessable examples such as 1000quizzen.'
+    title: 'Use safe passwords (not: 1000quizzen)',
+    description: ''
   },
   {
     category: 'Password policy',
-    title: 'Change passwords periodically',
-    description: 'Review and rotate passwords on a periodic basis where appropriate.'
+    title: 'Periodically change passwords',
+    description: ''
   },
   {
     category: 'Password policy',
-    title: 'Rotate shared passwords when colleagues leave',
-    description: 'Change shared passwords whenever someone leaves the company.'
+    title: 'Change shared passwords when someone leaves the company',
+    description: ''
   },
   {
     category: 'Password policy',
-    title: 'Apply need-to-know access',
-    description: 'Grant access only where someone genuinely needs it.'
+    title: 'Need to know policy (does someone really needs access?)',
+    description: ''
   },
   {
     category: 'Laptop security',
-    title: 'Enable Find My Mac',
-    description: 'Enable Find My Mac on your laptop so devices can be located if lost.'
+    title: 'Enable Find my Mac on your laptop (see how to here)',
+    description: ''
   },
   {
     category: 'Laptop security',
-    title: 'Enable FileVault',
-    description: 'Enable FileVault on your laptop to encrypt the device.'
+    title: 'Enable FileVault on your laptop (see how to here)',
+    description: ''
   },
   {
     category: 'Laptop security',
-    title: 'Enable firewall',
-    description: 'Enable the device firewall through system security settings.'
+    title: 'Enable Firewall on your laptop ( > System preferences > Security & privacy > Firewall)',
+    description: ''
   },
   {
     category: 'Laptop security',
-    title: 'Lock your screen when away',
-    description: 'Whenever you are not around your laptop, lock the screen.'
+    title: 'When not around your laptop, lock your screen',
+    description: ''
   },
   {
     category: 'Laptop security',
-    title: 'Store unattended laptops securely',
-    description: 'When not taking your laptop home, store it in the safe.'
+    title: 'When not taking your laptop home, always store it in the safe',
+    description: ''
   },
   {
     category: 'Laptop security',
-    title: 'Review Google account devices',
-    description: 'Periodically review which devices are logged into your Google account and remove devices you no longer use.'
+    title: 'Periodically check on which devices your Google account is logged in and delete devices you do not use anymore (see how to here)',
+    description: ''
   },
   {
     category: 'Office security',
-    title: 'Do not leave one person behind alone',
-    description: 'When leaving the office in the evening, do not leave anybody behind alone.'
+    title: 'When leaving the office in the evening, do not leave anybody behind alone (#togetherisbetter)',
+    description: ''
   },
   {
     category: 'Office security',
-    title: 'Lock the office door properly',
-    description: 'Lock the door with your key instead of just closing it.'
+    title: "Lock the door with your key, don't just close it",
+    description: ''
   },
   {
     category: 'Data security',
-    title: 'Delete unused personal data',
-    description: 'Delete personal data that is no longer needed.'
+    title: 'Delete (personal) data that your do not use anymore',
+    description: ''
   },
   {
     category: 'Data security',
-    title: 'Store data in the cloud only',
-    description: 'Store all data in the cloud and avoid local data storage or USB sticks.'
+    title: 'Store all data in the cloud (no local data or USB sticks)',
+    description: ''
   },
   {
     category: 'Data security',
-    title: 'Anonymize data where possible',
-    description: 'Anonymize data as much as possible.'
+    title: 'Anonymize data as much as possible',
+    description: ''
   },
   {
     category: 'Data security',
-    title: 'Review storage periods for necessity',
-    description: 'Check how long data is stored and whether that remains necessary.'
+    title: 'How long is data stored and is this necessary?',
+    description: ''
   },
   {
     category: 'Data security',
-    title: 'Think before sharing sensitive data',
-    description: 'Be careful when sharing privacy-sensitive data over email, Google spreadsheets, or Dropbox.'
+    title: 'Think before sharing privacy sensitive data over mail / google spreadsheet / dropbox (data sharing policy)',
+    description: ''
   },
   {
     category: 'Data security',
-    title: 'Include Legal in external agreements',
-    description: 'When starting a contract or agreement with an external party, include Legal for the privacy and security aspects.'
+    title: 'When starting a contract/agreement with an external party, include Legal for the privacy/security part (legal@squla.com)',
+    description: ''
   },
   {
     category: 'Data security',
-    title: 'Know the data breach response',
-    description: 'Know what to do in case of a potential data breach, including the 72-hour reporting deadline.'
+    title: 'Know what to do in case of a (potential) data breach (72 hour deadline) - See the presentation attached below: 20170928 PPT data breach.pdf',
+    description: ''
   }
 ];
 

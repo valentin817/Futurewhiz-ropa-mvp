@@ -145,8 +145,7 @@ async function ensureControllerProfile(database) {
 }
 
 async function ensureSecurityMeasureLibrary(database) {
-  const existing = await compileStatement(database, 'SELECT COUNT(*) AS count FROM security_measure_library').get();
-  if (existing.count > 0) return;
+  await compileStatement(database, `DELETE FROM security_measure_library WHERE created_by_email = 'seed@futurewhiz.com'`).run();
 
   const insert = compileStatement(
     database,

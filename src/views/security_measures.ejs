@@ -4,7 +4,7 @@
   <div>
     <span class="eyebrow">Security register</span>
     <h1>Security measures</h1>
-    <p>Maintain reusable technical and organisational measures as individual cards instead of fictional activity summaries.</p>
+    <p>Technical and organizational measures recorded as reusable security measure boxes.</p>
   </div>
   <div class="header-actions">
     <button class="button secondary" type="button" data-search-toggle aria-expanded="<%= activeFilters.length ? 'true' : 'false' %>">Search</button>
@@ -24,7 +24,7 @@
   <form class="filters-grid" method="get" action="/security-measures">
     <label class="span-2">
       <span>Keyword search</span>
-      <input type="text" name="q" value="<%= filters.q %>" placeholder="Search title, description, or category" />
+      <input type="text" name="q" value="<%= filters.q %>" placeholder="Search measure, description, or category" />
     </label>
 
     <label>
@@ -57,7 +57,7 @@
   <div class="section-heading">
     <div>
       <h2>New security measure</h2>
-      <p>Add a reusable measure card with a category, title, and description.</p>
+      <p>Add a reusable measure with a category and measure text. Description is optional.</p>
     </div>
   </div>
 
@@ -78,12 +78,12 @@
     </label>
 
     <label>
-      <span>Title</span>
+      <span>Measure</span>
       <input type="text" name="title" value="<%= formValues.title %>" />
     </label>
 
     <label class="span-2">
-      <span>Description</span>
+      <span>Description (optional)</span>
       <textarea name="description" rows="4"><%= formValues.description %></textarea>
     </label>
 
@@ -129,10 +129,12 @@
               <span class="security-measure-label">Measure</span>
               <span class="security-measure-value"><%= measure.title %></span>
             </div>
-            <div class="security-measure-row">
-              <span class="security-measure-label">Description</span>
-              <span class="security-measure-value"><%= measure.description %></span>
-            </div>
+            <% if (measure.description) { %>
+              <div class="security-measure-row">
+                <span class="security-measure-label">Description</span>
+                <span class="security-measure-value"><%= measure.description %></span>
+              </div>
+            <% } %>
           </div>
         </article>
       <% }) %>

@@ -1300,8 +1300,7 @@ app.post(
     const errors = [];
 
     if (!formValues.category) errors.push('Category is required.');
-    if (!formValues.title) errors.push('Title is required.');
-    if (!formValues.description) errors.push('Description is required.');
+    if (!formValues.title) errors.push('Measure is required.');
 
     if (errors.length > 0) {
       return renderSecurityMeasureLibrary(req, res.status(422), {
