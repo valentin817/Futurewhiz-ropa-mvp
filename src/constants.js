@@ -57,106 +57,46 @@ export const FUTUREWHIZ_ROLE_OPTIONS = [
   { value: 'processor', label: 'Futurewhiz acts as processor' }
 ];
 
-export const SECURITY_MEASURE_SEEDS = [
+export const SECURITY_MEASURE_CATEGORY_SEEDS = [
   {
-    category: 'Password policy',
-    title: 'Use LastPass for storing passwords (enable 2-step verification)',
-    description: ''
+    name: 'Password policy',
+    notes: [
+      '- Use LastPass for storing passwords (enable 2-step verification)',
+      '- Use safe passwords (not: 1000quizzen)',
+      '- Periodically change passwords',
+      '- Change shared passwords when someone leaves the company',
+      '- Need to know policy (does someone really needs access?)'
+    ].join('\n')
   },
   {
-    category: 'Password policy',
-    title: 'Use safe passwords (not: 1000quizzen)',
-    description: ''
+    name: 'Laptop security',
+    notes: [
+      '- Enable Find my Mac on your laptop (see how to here)',
+      '- Enable FileVault on your laptop (see how to here)',
+      '- Enable Firewall on your laptop ( > System preferences > Security & privacy > Firewall)',
+      '- When not around your laptop, lock your screen',
+      '- When not taking your laptop home, always store it in the safe',
+      '- Periodically check on which devices your Google account is logged in and delete devices you do not use anymore (see how to here)'
+    ].join('\n')
   },
   {
-    category: 'Password policy',
-    title: 'Periodically change passwords',
-    description: ''
+    name: 'Office security',
+    notes: [
+      '- When leaving the office in the evening, do not leave anybody behind alone (#togetherisbetter)',
+      "- Lock the door with your key, don't just close it"
+    ].join('\n')
   },
   {
-    category: 'Password policy',
-    title: 'Change shared passwords when someone leaves the company',
-    description: ''
-  },
-  {
-    category: 'Password policy',
-    title: 'Need to know policy (does someone really needs access?)',
-    description: ''
-  },
-  {
-    category: 'Laptop security',
-    title: 'Enable Find my Mac on your laptop (see how to here)',
-    description: ''
-  },
-  {
-    category: 'Laptop security',
-    title: 'Enable FileVault on your laptop (see how to here)',
-    description: ''
-  },
-  {
-    category: 'Laptop security',
-    title: 'Enable Firewall on your laptop ( > System preferences > Security & privacy > Firewall)',
-    description: ''
-  },
-  {
-    category: 'Laptop security',
-    title: 'When not around your laptop, lock your screen',
-    description: ''
-  },
-  {
-    category: 'Laptop security',
-    title: 'When not taking your laptop home, always store it in the safe',
-    description: ''
-  },
-  {
-    category: 'Laptop security',
-    title: 'Periodically check on which devices your Google account is logged in and delete devices you do not use anymore (see how to here)',
-    description: ''
-  },
-  {
-    category: 'Office security',
-    title: 'When leaving the office in the evening, do not leave anybody behind alone (#togetherisbetter)',
-    description: ''
-  },
-  {
-    category: 'Office security',
-    title: "Lock the door with your key, don't just close it",
-    description: ''
-  },
-  {
-    category: 'Data security',
-    title: 'Delete (personal) data that your do not use anymore',
-    description: ''
-  },
-  {
-    category: 'Data security',
-    title: 'Store all data in the cloud (no local data or USB sticks)',
-    description: ''
-  },
-  {
-    category: 'Data security',
-    title: 'Anonymize data as much as possible',
-    description: ''
-  },
-  {
-    category: 'Data security',
-    title: 'How long is data stored and is this necessary?',
-    description: ''
-  },
-  {
-    category: 'Data security',
-    title: 'Think before sharing privacy sensitive data over mail / google spreadsheet / dropbox (data sharing policy)',
-    description: ''
-  },
-  {
-    category: 'Data security',
-    title: 'When starting a contract/agreement with an external party, include Legal for the privacy/security part (legal@squla.com)',
-    description: ''
-  },
-  {
-    category: 'Data security',
-    title: 'Know what to do in case of a (potential) data breach (72 hour deadline) - See the presentation attached below: 20170928 PPT data breach.pdf',
-    description: ''
+    name: 'Data security',
+    notes: [
+      '- Delete (personal) data that your do not use anymore',
+      '- Store all data in the cloud (no local data or USB sticks)',
+      '- Anonymize data as much as possible',
+      '- How long is data stored and is this necessary?',
+      '- Think before sharing privacy sensitive data over mail / google spreadsheet / dropbox (data sharing policy)',
+      '- When starting a contract/agreement with an external party, include Legal for the privacy/security part (legal@squla.com)',
+      '- Know what to do in case of a (potential) data breach (72 hour deadline) - See the presentation attached below: 20170928 PPT data breach.pdf'
+    ].join('\n')
   }
 ];
 

@@ -505,8 +505,7 @@ async function fetchFiltersSupportData() {
 function buildSecurityMeasureFilters(query) {
   return {
     q: String(query.q || '').trim(),
-    category: String(query.category || '').trim(),
-    sort: String(query.sort || 'category_asc')
+    sort: String(query.sort || 'name_asc')
   };
 }
 
@@ -515,21 +514,15 @@ function buildSecurityMeasureWhere(filters) {
   const params = [];
 
   if (filters.q) {
-    clauses.push('(title LIKE ? OR description LIKE ? OR category LIKE ?)');
+    clauses.push('(name LIKE ? OR notes LIKE ?)');
     const term = `%${filters.q}%`;
-    params.push(term, term, term);
-  }
-
-  if (filters.category) {
-    clauses.push('category = ?');
-    params.push(filters.category);
+    params.push(term, term);
   }
 
   const orderBy = {
-    category_asc: 'category ASC, sort_order ASC, title ASC',
-    title_asc: 'title ASC',
-    updated_desc: 'updated_at DESC, title ASC'
-  }[filters.sort] || 'category ASC, sort_order ASC, title ASC';
+    name_asc: 'sort_order ASC, name ASC',
+    updated_desc: 'updated_at DESC, name ASC'
+  }[filters.sort] || 'sort_order ASC, name ASC';
 
   return { whereSql: clauses.join(' AND '), params, orderBy };
 }
@@ -537,10 +530,9 @@ function buildSecurityMeasureWhere(filters) {
 function summarizeSecurityMeasureFilters(filters) {
   const summaries = [];
   if (filters.q) summaries.push(`Keyword: ${filters.q}`);
-  if (filters.category) summaries.push(`Category: ${filters.category}`);
-  if (filters.sort && filters.sort !== 'category_asc') {
+  if (filters.sort && filters.sort !== 'name_asc') {
     const labels = {
-      title_asc: 'Title',
+      name_asc: 'Category',
       updated_desc: 'Last updated'
     };
     summaries.push(`Sorted by: ${labels[filters.sort] || filters.sort}`);
@@ -551,20 +543,16 @@ function summarizeSecurityMeasureFilters(filters) {
 async function renderSecurityMeasureLibrary(req, res, options = {}) {
   const filters = options.filters || buildSecurityMeasureFilters(req.query);
   const { whereSql, params, orderBy } = buildSecurityMeasureWhere(filters);
-  const [measures, categoryRows] = await Promise.all([
-    db.prepare(`SELECT * FROM security_measure_library WHERE ${whereSql} ORDER BY ${orderBy}`).all(params),
-    db.prepare('SELECT DISTINCT category FROM security_measure_library ORDER BY category ASC').all()
-  ]);
+  const categories = await db.prepare(`SELECT * FROM security_measure_categories WHERE ${whereSql} ORDER BY ${orderBy}`).all(params);
 
   return res.render('security_measures', {
     pageTitle: 'Security measures',
-    measures,
+    categories,
     activeFilters: summarizeSecurityMeasureFilters(filters),
     filters,
     exportQuery: new URLSearchParams(filters).toString(),
-    categoryOptions: categoryRows.map((row) => row.category),
     formErrors: options.formErrors || [],
-    formValues: options.formValues || { category: '', title: '', description: '' },
+    formValues: options.formValues || { name: '', notes: '' },
     showNewForm: Boolean(options.showNewForm)
   });
 }
@@ -1292,15 +1280,13 @@ app.post(
   ensureAuth,
   asyncHandler(async (req, res) => {
     const formValues = {
-      category: String(req.body.category || '').trim(),
-      title: String(req.body.title || '').trim(),
-      description: String(req.body.description || '').trim()
+      name: String(req.body.name || '').trim(),
+      notes: String(req.body.notes || '').trim()
     };
     const filters = buildSecurityMeasureFilters(req.query);
     const errors = [];
 
-    if (!formValues.category) errors.push('Category is required.');
-    if (!formValues.title) errors.push('Measure is required.');
+    if (!formValues.name) errors.push('Category name is required.');
 
     if (errors.length > 0) {
       return renderSecurityMeasureLibrary(req, res.status(422), {
@@ -1312,28 +1298,53 @@ app.post(
     }
 
     const sortRow = await db
-      .prepare('SELECT COALESCE(MAX(sort_order), 0) + 1 AS next_sort_order FROM security_measure_library WHERE category = ?')
-      .get(formValues.category);
+      .prepare('SELECT COALESCE(MAX(sort_order), 0) + 1 AS next_sort_order FROM security_measure_categories')
+      .get();
 
+    try {
+      await db
+        .prepare(
+          `
+            INSERT INTO security_measure_categories (
+              name, notes, created_by_email, sort_order, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?)
+          `
+        )
+        .run(formValues.name, formValues.notes, req.session.user.email, sortRow.next_sort_order, nowIso(), nowIso());
+    } catch (error) {
+      if (String(error.message || '').includes('UNIQUE')) {
+        return renderSecurityMeasureLibrary(req, res.status(422), {
+          filters,
+          formErrors: ['A security measure category with this name already exists.'],
+          formValues,
+          showNewForm: true
+        });
+      }
+      throw error;
+    }
+
+    setFlash(req, 'success', 'Security measure category added.');
+    return res.redirect('/security-measures');
+  })
+);
+
+app.post(
+  '/security-measures/:id',
+  ensureAuth,
+  asyncHandler(async (req, res) => {
+    const id = Number(req.params.id);
+    const notes = String(req.body.notes || '').trim();
     await db
       .prepare(
         `
-          INSERT INTO security_measure_library (
-            category, title, description, created_by_email, sort_order, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?)
+          UPDATE security_measure_categories
+          SET notes = ?, updated_at = ?
+          WHERE id = ?
         `
       )
-      .run(
-        formValues.category,
-        formValues.title,
-        formValues.description,
-        req.session.user.email,
-        sortRow.next_sort_order,
-        nowIso(),
-        nowIso()
-      );
+      .run(notes, nowIso(), id);
 
-    setFlash(req, 'success', 'Security measure added.');
+    setFlash(req, 'success', 'Security measures updated.');
     return res.redirect('/security-measures');
   })
 );
@@ -1660,8 +1671,8 @@ app.get(
   asyncHandler(async (req, res) => {
     const filters = buildSecurityMeasureFilters(req.query);
     const { whereSql, params, orderBy } = buildSecurityMeasureWhere(filters);
-    const measures = await db.prepare(`SELECT * FROM security_measure_library WHERE ${whereSql} ORDER BY ${orderBy}`).all(params);
-    const pdf = buildSecurityRegisterPdf(measures);
+    const categories = await db.prepare(`SELECT * FROM security_measure_categories WHERE ${whereSql} ORDER BY ${orderBy}`).all(params);
+    const pdf = buildSecurityRegisterPdf(categories);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="futurewhiz-security-measures-register.pdf"');
     return res.send(pdf);

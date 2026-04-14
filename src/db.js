@@ -1,7 +1,7 @@
 import sqlite3 from 'sqlite3';
 import fs from 'fs';
 import path from 'path';
-import { CONTROLLER_PROFILE_DEFAULTS, CONTROLLED_VOCABULARY_SEEDS, SECURITY_MEASURE_SEEDS, STATUS_OPTIONS } from './constants.js';
+import { CONTROLLER_PROFILE_DEFAULTS, CONTROLLED_VOCABULARY_SEEDS, SECURITY_MEASURE_CATEGORY_SEEDS, STATUS_OPTIONS } from './constants.js';
 import { addMonths, nowIso, stringifyJsonArray, todayIsoDate } from './helpers.js';
 
 const DB_PATH = path.resolve(process.cwd(), process.env.DB_PATH || 'data/ropa.db');
@@ -144,20 +144,21 @@ async function ensureControllerProfile(database) {
   );
 }
 
-async function ensureSecurityMeasureLibrary(database) {
-  await compileStatement(database, `DELETE FROM security_measure_library WHERE created_by_email = 'seed@futurewhiz.com'`).run();
+async function ensureSecurityMeasureCategories(database) {
+  const existing = await compileStatement(database, 'SELECT COUNT(*) AS count FROM security_measure_categories').get();
+  if (existing.count > 0) return;
 
   const insert = compileStatement(
     database,
     `
-      INSERT INTO security_measure_library (
-        category, title, description, created_by_email, sort_order, created_at, updated_at
-      ) VALUES (?, ?, ?, 'seed@futurewhiz.com', ?, ?, ?)
+      INSERT INTO security_measure_categories (
+        name, notes, created_by_email, sort_order, created_at, updated_at
+      ) VALUES (?, ?, 'seed@futurewhiz.com', ?, ?, ?)
     `
   );
 
-  for (const [index, item] of SECURITY_MEASURE_SEEDS.entries()) {
-    await insert.run(item.category, item.title, item.description, index + 1, nowIso(), nowIso());
+  for (const [index, item] of SECURITY_MEASURE_CATEGORY_SEEDS.entries()) {
+    await insert.run(item.name, item.notes, index + 1, nowIso(), nowIso());
   }
 }
 
@@ -942,6 +943,16 @@ export async function initDb() {
         updated_at TEXT NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS security_measure_categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        notes TEXT NOT NULL DEFAULT '',
+        created_by_email TEXT NOT NULL,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
       CREATE INDEX IF NOT EXISTS idx_vocab_group ON vocabulary_values(group_key, active, sort_order);
       CREATE INDEX IF NOT EXISTS idx_users_role ON users(role, active);
       CREATE INDEX IF NOT EXISTS idx_activities_status ON activities(status);
@@ -954,6 +965,7 @@ export async function initDb() {
       CREATE INDEX IF NOT EXISTS idx_intake_created ON intake_requests(created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_attachments_activity ON activity_attachments(activity_id, uploaded_at DESC);
       CREATE INDEX IF NOT EXISTS idx_security_measure_category ON security_measure_library(category, sort_order, title);
+      CREATE INDEX IF NOT EXISTS idx_security_measure_categories_name ON security_measure_categories(name, sort_order);
     `
   );
 
@@ -961,7 +973,7 @@ export async function initDb() {
   await seedVocabulary(db);
   await seedUsers(db);
   await ensureControllerProfile(db);
-  await ensureSecurityMeasureLibrary(db);
+  await ensureSecurityMeasureCategories(db);
   await seedActivities(db);
 
   return db;

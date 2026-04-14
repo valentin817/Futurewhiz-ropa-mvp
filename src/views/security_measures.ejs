@@ -4,11 +4,10 @@
   <div>
     <span class="eyebrow">Security register</span>
     <h1>Security measures</h1>
-    <p>Technical and organizational measures recorded as reusable security measure boxes.</p>
   </div>
   <div class="header-actions">
     <button class="button secondary" type="button" data-search-toggle aria-expanded="<%= activeFilters.length ? 'true' : 'false' %>">Search</button>
-    <button class="button secondary" type="button" data-new-measure-toggle aria-expanded="<%= showNewForm ? 'true' : 'false' %>">New security measure</button>
+    <button class="button secondary" type="button" data-new-category-toggle aria-expanded="<%= showNewForm ? 'true' : 'false' %>">New category</button>
     <a class="button secondary" href="/exports/security-measures.pdf<%= exportQuery ? `?${exportQuery}` : '' %>">Export PDF</a>
   </div>
 </section>
@@ -17,31 +16,20 @@
   <div class="register-toolbar">
     <div>
       <h2>Search and filters</h2>
-      <p>Filter the security register by keyword or category.</p>
+      <p>Search across category names and the text recorded inside each category.</p>
     </div>
   </div>
 
   <form class="filters-grid" method="get" action="/security-measures">
     <label class="span-2">
       <span>Keyword search</span>
-      <input type="text" name="q" value="<%= filters.q %>" placeholder="Search measure, description, or category" />
-    </label>
-
-    <label>
-      <span>Category</span>
-      <select name="category">
-        <option value="">All categories</option>
-        <% categoryOptions.forEach((category) => { %>
-          <option value="<%= category %>" <%= filters.category === category ? 'selected' : '' %>><%= category %></option>
-        <% }) %>
-      </select>
+      <input type="text" name="q" value="<%= filters.q %>" placeholder="Search category or recorded security measures" />
     </label>
 
     <label>
       <span>Sort by</span>
       <select name="sort">
-        <option value="category_asc" <%= filters.sort === 'category_asc' ? 'selected' : '' %>>Category</option>
-        <option value="title_asc" <%= filters.sort === 'title_asc' ? 'selected' : '' %>>Title</option>
+        <option value="name_asc" <%= filters.sort === 'name_asc' ? 'selected' : '' %>>Category</option>
         <option value="updated_desc" <%= filters.sort === 'updated_desc' ? 'selected' : '' %>>Last updated</option>
       </select>
     </label>
@@ -53,11 +41,11 @@
   </form>
 </section>
 
-<section class="panel security-create-panel <%= showNewForm ? 'is-open' : '' %>" data-new-measure-panel <%= showNewForm ? '' : 'hidden' %>>
+<section class="panel security-create-panel <%= showNewForm ? 'is-open' : '' %>" data-new-category-panel <%= showNewForm ? '' : 'hidden' %>>
   <div class="section-heading">
     <div>
-      <h2>New security measure</h2>
-      <p>Add a reusable measure with a category and measure text. Description is optional.</p>
+      <h2>New category</h2>
+      <p>Add a new security measure category with a text box for the recorded measures.</p>
     </div>
   </div>
 
@@ -73,30 +61,19 @@
 
   <form class="form-grid" method="post" action="/security-measures">
     <label>
-      <span>Category</span>
-      <input type="text" name="category" value="<%= formValues.category %>" list="security-category-options" />
-    </label>
-
-    <label>
-      <span>Measure</span>
-      <input type="text" name="title" value="<%= formValues.title %>" />
+      <span>Category name</span>
+      <input type="text" name="name" value="<%= formValues.name %>" />
     </label>
 
     <label class="span-2">
-      <span>Description (optional)</span>
-      <textarea name="description" rows="4"><%= formValues.description %></textarea>
+      <span>Security measures</span>
+      <textarea name="notes" rows="8" placeholder="- Add the security measures recorded under this category"><%= formValues.notes %></textarea>
     </label>
 
     <div class="form-actions span-2">
-      <button class="button" type="submit">Save security measure</button>
+      <button class="button" type="submit">Save category</button>
     </div>
   </form>
-
-  <datalist id="security-category-options">
-    <% categoryOptions.forEach((category) => { %>
-      <option value="<%= category %>"></option>
-    <% }) %>
-  </datalist>
 </section>
 
 <section class="register-card-list">
@@ -108,34 +85,31 @@
     </div>
   <% } %>
 
-  <% if (measures.length === 0) { %>
+  <% if (categories.length === 0) { %>
     <section class="panel">
-      <p class="muted">No security measures matched the selected filters.</p>
+      <p class="muted">No security measure categories matched the selected filters.</p>
     </section>
   <% } else { %>
-    <section class="security-measure-grid">
-      <% measures.forEach((measure) => { %>
-        <article class="panel security-measure-card">
-          <div class="security-measure-card-head">
-            <strong>Security measure</strong>
-            <span class="muted"><%= formatDateTime(measure.updated_at || measure.created_at) %></span>
-          </div>
-          <div class="security-measure-record">
-            <div class="security-measure-row">
-              <span class="security-measure-label">Category</span>
-              <span class="security-measure-value security-measure-category"><%= measure.category %></span>
+    <section class="security-category-stack">
+      <% categories.forEach((category) => { %>
+        <article class="panel compliance-sheet security-category-sheet">
+          <div class="security-category-head">
+            <div>
+              <h2><%= category.name %></h2>
             </div>
-            <div class="security-measure-row">
-              <span class="security-measure-label">Measure</span>
-              <span class="security-measure-value"><%= measure.title %></span>
-            </div>
-            <% if (measure.description) { %>
-              <div class="security-measure-row">
-                <span class="security-measure-label">Description</span>
-                <span class="security-measure-value"><%= measure.description %></span>
-              </div>
-            <% } %>
+            <span class="muted"><%= formatDateTime(category.updated_at || category.created_at) %></span>
           </div>
+
+          <form class="stack security-category-form" method="post" action="/security-measures/<%= category.id %>">
+            <label class="security-category-field">
+              <span>Security measures</span>
+              <textarea class="security-category-notes" name="notes" rows="9"><%= category.notes %></textarea>
+            </label>
+
+            <div class="form-actions">
+              <button class="button" type="submit">Save category</button>
+            </div>
+          </form>
         </article>
       <% }) %>
     </section>
@@ -145,8 +119,8 @@
 <script>
   const searchToggle = document.querySelector('[data-search-toggle]');
   const searchPanel = document.querySelector('[data-search-panel]');
-  const newMeasureToggle = document.querySelector('[data-new-measure-toggle]');
-  const newMeasurePanel = document.querySelector('[data-new-measure-panel]');
+  const newCategoryToggle = document.querySelector('[data-new-category-toggle]');
+  const newCategoryPanel = document.querySelector('[data-new-category-panel]');
 
   if (searchToggle && searchPanel) {
     searchToggle.addEventListener('click', () => {
@@ -163,17 +137,17 @@
     });
   }
 
-  if (newMeasureToggle && newMeasurePanel) {
-    newMeasureToggle.addEventListener('click', () => {
-      const isHidden = newMeasurePanel.hasAttribute('hidden');
+  if (newCategoryToggle && newCategoryPanel) {
+    newCategoryToggle.addEventListener('click', () => {
+      const isHidden = newCategoryPanel.hasAttribute('hidden');
       if (isHidden) {
-        newMeasurePanel.removeAttribute('hidden');
-        newMeasurePanel.classList.add('is-open');
-        newMeasureToggle.setAttribute('aria-expanded', 'true');
+        newCategoryPanel.removeAttribute('hidden');
+        newCategoryPanel.classList.add('is-open');
+        newCategoryToggle.setAttribute('aria-expanded', 'true');
       } else {
-        newMeasurePanel.setAttribute('hidden', '');
-        newMeasurePanel.classList.remove('is-open');
-        newMeasureToggle.setAttribute('aria-expanded', 'false');
+        newCategoryPanel.setAttribute('hidden', '');
+        newCategoryPanel.classList.remove('is-open');
+        newCategoryToggle.setAttribute('aria-expanded', 'false');
       }
     });
   }
