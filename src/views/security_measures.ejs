@@ -117,11 +117,23 @@
       <% measures.forEach((measure) => { %>
         <article class="panel security-measure-card">
           <div class="security-measure-card-head">
-            <span class="security-measure-category"><%= measure.category %></span>
+            <strong>Security measure</strong>
             <span class="muted"><%= formatDateTime(measure.updated_at || measure.created_at) %></span>
           </div>
-          <h2><%= measure.title %></h2>
-          <p><%= measure.description %></p>
+          <div class="security-measure-record">
+            <div class="security-measure-row">
+              <span class="security-measure-label">Category</span>
+              <span class="security-measure-value security-measure-category"><%= measure.category %></span>
+            </div>
+            <div class="security-measure-row">
+              <span class="security-measure-label">Measure</span>
+              <span class="security-measure-value"><%= measure.title %></span>
+            </div>
+            <div class="security-measure-row">
+              <span class="security-measure-label">Description</span>
+              <span class="security-measure-value"><%= measure.description %></span>
+            </div>
+          </div>
         </article>
       <% }) %>
     </section>
